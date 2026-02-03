@@ -3,24 +3,22 @@ import { personas } from '@/config/personas';
 
 export async function POST(request) {
   try {
-    const { personaSlug, messages } = await request.json();
+    const { messages, personaSlug } = await request.json();
+    
     const persona = personas.find(p => p.slug === personaSlug);
-
     if (!persona) {
       return NextResponse.json({ error: 'Persona not found' }, { status: 404 });
     }
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ 
-        message: "API key not configured. Add OPENROUTER_API_KEY to your environment variables."
-      });
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
     }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': \`Bearer \${apiKey}\`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
