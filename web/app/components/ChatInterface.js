@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { personas, modelOptions } from '@/config/personas';
 
 const PLAN_LIMITS = {
@@ -11,7 +10,7 @@ const PLAN_LIMITS = {
 };
 
 export default function ChatInterface() {
-  const { user, profile, loading, signInWithProvider, signOut } = useAuth();
+  const { user, profile, loading, signInWithProvider, signOut, supabase } = useAuth();
   const [view, setView] = useState('initial');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -30,14 +29,16 @@ export default function ChatInterface() {
   }, [messages]);
 
   useEffect(() => {
-    if (user && profile) {
+    if (user && profile && supabase) {
       loadUserAIs();
     }
-  }, [user, profile]);
+  }, [user, profile, supabase]);
 
   useEffect(() => {
-    loadSharedAIs();
-  }, []);
+    if (supabase) {
+      loadSharedAIs();
+    }
+  }, [supabase]);
 
   const loadUserAIs = async () => {
     const { data } = await supabase
@@ -177,9 +178,7 @@ export default function ChatInterface() {
     setCurrentPersona({ ...ai, index, isShared });
     setView('chatting');
     
-    // Check if first message after deploy - show pricing modal
     const messageCount = await getMessageCount(user?.id);
-    const limits = PLAN_LIMITS[profile?.plan_tier || 'starter'];
     
     if (messageCount === 0 && !isShared) {
       setMessages([{
@@ -198,7 +197,7 @@ export default function ChatInterface() {
   };
 
   const getMessageCount = async (userId) => {
-    if (!userId) return 0;
+    if (!userId || !supabase) return 0;
     const { count } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
@@ -220,7 +219,6 @@ export default function ChatInterface() {
     setInput('');
     setIsLoading(true);
 
-    // Check message limits
     if (user && profile) {
       const messageCount = await getMessageCount(user.id);
       const limits = PLAN_LIMITS[profile.plan_tier];
@@ -261,8 +259,7 @@ export default function ChatInterface() {
         persona: personaToUse.name
       }]);
 
-      // Save message to DB
-      if (user) {
+      if (user && supabase) {
         await supabase.from('messages').insert([{
           user_id: user.id,
           bot_id: currentPersona?.id || null,
@@ -341,7 +338,7 @@ export default function ChatInterface() {
                     <span className="text-white text-sm">{profile?.username}</span>
                   </button>
                   {showProfileMenu && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-[#2D1B69]/95 backdrop-blur-xl border border-[#8B9FDE]/40 rounded-lg shadow-2xl p-2">
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-[#2D1B69]/95 backdrop-blur-xl border border-[#8B9FDE]/40 rounded-lg shadow-2xl p-2 z-50">
                       <div className="text-[#8B9FDE] text-xs px-3 py-2 border-b border-[#8B9FDE]/20">
                         Plan: <span className="text-[#00D9FF] font-bold capitalize">{profile?.plan_tier}</span>
                       </div>
