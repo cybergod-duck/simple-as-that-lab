@@ -26,7 +26,7 @@ export default function ChatInterface() {
     if (lower === '/menu') {
       setMessages(p => [...p, 
         { role: 'user', content: cmd }, 
-        { role: 'assistant', content: '🟢 READY NOW:\n• /bots - Switch AI personalities\n• /chat - Talk with current persona\n• /switch [name] - Change personality\n• /default - Return to Simple AI\n\n🔨 COMING SOON:\n• /export - Generate Telegram/Discord bots\n• /research - Browse fake news & papers\n• Multi-bot deployment\n• Custom personality builder', persona: currentPersona.name }
+        { role: 'assistant', content: '🟢 READY NOW:\n• /bots - Switch AI personalities\n• /chat - Talk with current persona\n• /switch [name] - Change personality\n• /default - Return to Simple AI\n\n🔨 COMING SOON:\n• /export - Generate Telegram/Discord bots\n• Bot marketplace\n• Custom personality builder\n• System settings for sale', persona: currentPersona.name }
       ]);
       return true;
     }
@@ -52,11 +52,7 @@ export default function ChatInterface() {
       return true;
     }
     if (lower === '/export') {
-      setMessages(p => [...p, { role: 'user', content: cmd }, { role: 'assistant', content: 'Bot export coming soon! Generate Telegram and Discord configs.', persona: currentPersona.name }]);
-      return true;
-    }
-    if (lower === '/research') {
-      setMessages(p => [...p, { role: 'user', content: cmd }, { role: 'assistant', content: 'Research Division coming soon! Browse certified papers and fake news.', persona: currentPersona.name }]);
+      setMessages(p => [...p, { role: 'user', content: cmd }, { role: 'assistant', content: 'Bot export coming soon! Generate Telegram and Discord configs for any personality.', persona: currentPersona.name }]);
       return true;
     }
     return false;
@@ -96,37 +92,46 @@ export default function ChatInterface() {
       <div className="relative z-10 flex flex-col h-full">
         {/* Header */}
         <div className="p-6 border-b border-[#8B9FDE]/30 bg-[#0A0E27]/80 backdrop-blur-xl">
-          <h1 className="text-4xl font-bold text-white text-center">
-            S.A.T. <span className="text-[#00D9FF] drop-shadow-[0_0_15px_rgba(0,217,255,0.5)]">Labs</span>
-          </h1>
-          <p className="text-[#8B9FDE] text-sm text-center mt-1">
-            AI Personality Engine • Bot Factory • Research Division
-          </p>
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div>
+              <h1 className="text-5xl font-bold text-[#00D9FF] drop-shadow-[0_0_20px_rgba(0,217,255,0.6)] mb-1">
+                Simple As That
+              </h1>
+              <p className="text-[#8B9FDE] text-sm">
+                AI Personality Lab & Bot Factory
+              </p>
+            </div>
+            <div className="text-right text-xs text-[#8B9FDE]/50">
+              <p>Affiliates:</p>
+              <p>Voss Neural Research</p>
+              <p>Duck Research Division</p>
+            </div>
+          </div>
         </div>
         
         {/* Main content - 3 columns */}
-        <div className="flex-1 flex gap-4 p-6 overflow-hidden">
-          {/* Left sidebar - Social buttons */}
+        <div className="flex-1 flex gap-4 p-6 max-w-7xl mx-auto w-full overflow-hidden">
+          {/* Left sidebar - Deploy buttons */}
           <div className="w-48 flex flex-col gap-3">
             <div className="bg-[#2D1B69]/60 backdrop-blur-sm border border-[#8B9FDE]/40 rounded-xl p-4 text-center">
-              <p className="text-[#8B9FDE] text-xs mb-2">DEPLOY</p>
-              <button className="w-full mb-2 px-4 py-2 rounded-lg bg-[#0088cc]/80 hover:bg-[#0088cc] text-white font-semibold text-sm transition-colors border border-[#00D9FF]/30">
+              <p className="text-[#8B9FDE] text-xs mb-3 uppercase tracking-wide">Deploy Bot</p>
+              <button className="w-full mb-2 px-4 py-2 rounded-lg bg-[#0088cc]/80 hover:bg-[#0088cc] text-white font-semibold text-sm transition-all hover:shadow-lg hover:shadow-[#0088cc]/30 border border-[#00D9FF]/30">
                 Telegram
               </button>
-              <button className="w-full px-4 py-2 rounded-lg bg-[#5865F2]/80 hover:bg-[#5865F2] text-white font-semibold text-sm transition-colors border border-[#8B9FDE]/30">
+              <button className="w-full px-4 py-2 rounded-lg bg-[#5865F2]/80 hover:bg-[#5865F2] text-white font-semibold text-sm transition-all hover:shadow-lg hover:shadow-[#5865F2]/30 border border-[#8B9FDE]/30">
                 Discord
               </button>
               <p className="text-[#8B9FDE]/60 text-xs mt-2">(coming soon)</p>
             </div>
             
             <div className="bg-[#2D1B69]/60 backdrop-blur-sm border border-[#8B9FDE]/40 rounded-xl p-4">
-              <p className="text-[#00D9FF] font-bold text-sm mb-2">Active:</p>
-              <p className="text-white text-xs">{currentPersona.name}</p>
+              <p className="text-[#00D9FF] font-bold text-xs mb-2 uppercase tracking-wide">Active</p>
+              <p className="text-white text-sm">{currentPersona.name}</p>
             </div>
           </div>
           
           {/* Center - Chat */}
-          <div className="flex-1 flex flex-col bg-[#2D1B69]/40 backdrop-blur-sm border border-[#8B9FDE]/30 rounded-2xl overflow-hidden">
+          <div className="flex-1 flex flex-col bg-[#2D1B69]/40 backdrop-blur-sm border border-[#8B9FDE]/30 rounded-2xl overflow-hidden shadow-2xl">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((m, i) => (
                 <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
@@ -176,25 +181,25 @@ export default function ChatInterface() {
             </div>
           </div>
           
-          {/* Right sidebar - Research Division */}
+          {/* Right sidebar - Marketplace */}
           <div className="w-64 bg-[#2D1B69]/60 backdrop-blur-sm border border-[#8B9FDE]/40 rounded-2xl p-5 overflow-y-auto">
-            <h3 className="text-[#00D9FF] font-bold text-lg mb-3 drop-shadow-[0_0_10px_rgba(0,217,255,0.3)]">Research Division</h3>
-            <p className="text-[#8B9FDE] text-xs mb-4">Certified fake news, papers, and entertaining reads</p>
+            <h3 className="text-[#00D9FF] font-bold text-lg mb-3 drop-shadow-[0_0_10px_rgba(0,217,255,0.3)]">Bot Marketplace</h3>
+            <p className="text-[#8B9FDE] text-xs mb-4">AI systems and bots for sale</p>
             
             <div className="space-y-3">
+              <div className="p-3 bg-[#0A0E27]/60 rounded-lg border border-[#8B9FDE]/20 hover:border-[#00D9FF]/40 transition-colors cursor-pointer">
+                <p className="text-white text-sm font-semibold">System Settings</p>
+                <p className="text-[#8B9FDE]/70 text-xs mt-1">Pre-built AI configs</p>
+              </div>
+              
+              <div className="p-3 bg-[#0A0E27]/60 rounded-lg border border-[#8B9FDE]/20 hover:border-[#00D9FF]/40 transition-colors cursor-pointer">
+                <p className="text-white text-sm font-semibold">Custom Bots</p>
+                <p className="text-[#8B9FDE]/70 text-xs mt-1">Telegram & Discord ready</p>
+              </div>
+              
               <div className="p-3 bg-[#0A0E27]/60 rounded-lg border border-[#8B9FDE]/20">
                 <p className="text-white text-sm font-semibold">Coming Soon</p>
-                <p className="text-[#8B9FDE]/70 text-xs mt-1">Browse curated papers</p>
-              </div>
-              
-              <div className="p-3 bg-[#0A0E27]/60 rounded-lg border border-[#8B9FDE]/20">
-                <p className="text-white text-sm font-semibold">PDF Library</p>
-                <p className="text-[#8B9FDE]/70 text-xs mt-1">Upload & share docs</p>
-              </div>
-              
-              <div className="p-3 bg-[#0A0E27]/60 rounded-lg border border-[#8B9FDE]/20">
-                <p className="text-white text-sm font-semibold">Fake News</p>
-                <p className="text-[#8B9FDE]/70 text-xs mt-1">Entertaining fiction</p>
+                <p className="text-[#8B9FDE]/70 text-xs mt-1">Browse full catalog</p>
               </div>
             </div>
           </div>
