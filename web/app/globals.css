@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Rainbow text animation for creator credit */
+@keyframes rainbow {
+  0% { color: #ff0000; }
+  16% { color: #ff7f00; }
+  33% { color: #ffff00; }
+  50% { color: #00ff00; }
+  66% { color: #0000ff; }
+  83% { color: #8b00ff; }
+  100% { color: #ff0000; }
+}
+.animate-rainbow {
+  animation: rainbow 3s linear infinite;
+  text-shadow: 0 0 10px currentColor;
+}
