@@ -139,10 +139,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
           </div>
-          {/* Small /newAI in top-left corner */}
-          <span className="text-cyan-400 text-xs font-mono ml-3">
-            /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
-          </span>
         </div>
         <span className="text-purple-300 text-sm font-mono">simple-as-that:~$</span>
       </div>
@@ -150,8 +146,13 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       {/* Terminal Body */}
       <div className="flex-1 p-6 font-mono text-sm overflow-y-auto">
         {view === 'initial' && (
-          <div className="flex flex-col items-center justify-center h-full">
-            {/* Empty initial state - /newAI is in header */}
+          <div className="flex flex-col h-full">
+            {/* /newAI as terminal prompt line */}
+            <div className="mb-4">
+              <span className="text-cyan-400 text-base font-bold drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
+                /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+              </span>
+            </div>
           </div>
         )}
 
@@ -198,7 +199,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
               }
             }}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500"
-            placeholder={view === 'initial' ? "Press Enter to begin..." : "Type your message..."}
+            placeholder="Press Enter to begin..."
             autoFocus
           />
           {view !== 'initial' && (
