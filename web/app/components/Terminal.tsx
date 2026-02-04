@@ -162,7 +162,9 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setIsLoading(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    
     if (view === 'initial') {
       startBuilding();
       setInput('');
@@ -181,9 +183,9 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   return (
-    <div className="bg-[#0A0E27] border-2 border-cyan-500/50 rounded-lg shadow-2xl shadow-cyan-500/20 overflow-hidden h-[600px] flex flex-col">
+    <div className="bg-[#0A0E27] border-2 border-cyan-500/50 rounded-lg shadow-2xl shadow-cyan-500/20 overflow-hidden h-full flex flex-col">
       {/* Terminal Header */}
-      <div className="bg-slate-800 border-b border-cyan-500/30 px-4 py-2 flex justify-between items-center">
+      <div className="bg-slate-800 border-b border-cyan-500/30 px-4 py-2 flex justify-between items-center flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -249,18 +251,13 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-cyan-500/30 bg-slate-900/50">
-        <div className="flex items-center gap-2">
+      <div className="p-4 border-t border-cyan-500/30 bg-slate-900/50 flex-shrink-0">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !isLoading) {
-                handleSubmit();
-              }
-            }}
             disabled={isLoading}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
             placeholder="Press Enter to begin..."
@@ -268,14 +265,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           />
           {view !== 'initial' && (
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
               className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold px-6 py-2 rounded transition-all disabled:opacity-50"
             >
               Send
             </button>
           )}
-        </div>
+        </form>
       </div>
     </div>
   );
