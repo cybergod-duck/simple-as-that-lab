@@ -116,11 +116,16 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   const handleSubmit = () => {
+    if (view === 'initial') {
+      // On initial screen, ANY key press (even empty) starts building
+      startBuilding();
+      setInput('');
+      return;
+    }
+    
     if (!input.trim()) return;
     
-    if (view === 'initial') {
-      startBuilding();
-    } else if (view === 'building') {
+    if (view === 'building') {
       handleBuildingInput(input);
     } else if (view === 'chatting') {
       handleChattingInput(input);
