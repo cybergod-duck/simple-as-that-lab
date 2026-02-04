@@ -10,16 +10,31 @@ const QUESTIONS = [
   "Anything else special about this AI?"
 ];
 
-export default function Terminal({ onCommandChange }) {
-  const [view, setView] = useState('initial'); // 'initial', 'building', 'chatting'
+interface BuildData {
+  name?: string;
+  personality?: string;
+  topics?: string;
+  quirks?: string;
+  tone?: string;
+  special?: string;
+}
+
+interface Message {
+  role: string;
+  text: string;
+  persona?: string;
+}
+
+export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
+  const [view, setView] = useState<'initial' | 'building' | 'chatting'>('initial');
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [buildData, setBuildData] = useState({});
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [buildData, setBuildData] = useState<BuildData>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [botName, setBotName] = useState('');
   const [showCursor, setShowCursor] = useState(true);
-  const inputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Blinking cursor animation
   useEffect(() => {
@@ -46,11 +61,11 @@ export default function Terminal({ onCommandChange }) {
     }]);
   };
 
-  const handleBuildingInput = (text) => {
+  const handleBuildingInput = (text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }]);
 
     const newData = { ...buildData };
-    const questionKeys = ['name', 'personality', 'topics', 'quirks', 'tone', 'special'];
+    const questionKeys: (keyof BuildData)[] = ['name', 'personality', 'topics', 'quirks', 'tone', 'special'];
     newData[questionKeys[currentQuestion]] = text;
     setBuildData(newData);
 
@@ -72,7 +87,7 @@ export default function Terminal({ onCommandChange }) {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          text: `Perfect! ${newData.name} is ready to go. Start chatting below!`,
+          text: `Perfect! ${newData.name || 'Your AI'} is ready to go. Start chatting below!`,
           persona: 'Simple_AI'
         }]);
         setTimeout(() => {
@@ -87,7 +102,7 @@ export default function Terminal({ onCommandChange }) {
     }
   };
 
-  const handleChattingInput = (text) => {
+  const handleChattingInput = (text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }]);
     
     // Placeholder response - replace with API call later
