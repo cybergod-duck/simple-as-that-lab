@@ -139,11 +139,10 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
           </div>
-          {view === 'initial' && (
-            <span className="text-cyan-400 text-xs font-mono ml-3">
-              /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
-            </span>
-          )}
+          {/* Small /newAI in top-left corner */}
+          <span className="text-cyan-400 text-xs font-mono ml-3">
+            /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+          </span>
         </div>
         <span className="text-purple-300 text-sm font-mono">simple-as-that:~$</span>
       </div>
@@ -151,13 +150,8 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       {/* Terminal Body */}
       <div className="flex-1 p-6 font-mono text-sm overflow-y-auto">
         {view === 'initial' && (
-          <div className="flex flex-col items-center justify-center h-full space-y-8">
-            <div className="text-center">
-              <div className="text-6xl font-bold text-cyan-400 mb-4 drop-shadow-[0_0_30px_rgba(34,211,238,0.8)] animate-pulse">
-                /newAI
-              </div>
-              <p className="text-purple-300 text-lg">Create your custom AI personality</p>
-            </div>
+          <div className="flex flex-col items-center justify-center h-full">
+            {/* Empty initial state - /newAI is in header */}
           </div>
         )}
 

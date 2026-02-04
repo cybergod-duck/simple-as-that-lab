@@ -103,11 +103,16 @@ export default function Home() {
                 </div>
               </div>
               
-              {/* Creator Credit */}
+              {/* Creator Credit with link */}
               <div className="mt-6 pt-6 border-t border-purple-500/30">
-                <p className="text-center text-sm font-bold animate-rainbow">
+                <a 
+                  href="https://x.com/Cyberdvck" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-center text-sm font-bold animate-rainbow hover:scale-105 transition-transform"
+                >
                   Created by @Cyberdvck
-                </p>
+                </a>
               </div>
             </div>
           </aside>
