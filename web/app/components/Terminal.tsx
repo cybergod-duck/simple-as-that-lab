@@ -21,18 +21,23 @@ interface BuildData {
 
 interface Message {
   role: string;
-  text: string;
+  content: string;
+}
+
+interface DisplayMessage extends Message {
   persona?: string;
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
   const [view, setView] = useState<'initial' | 'building' | 'chatting'>('initial');
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [apiMessages, setApiMessages] = useState<Message[]>([]);
   const [buildData, setBuildData] = useState<BuildData>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [botName, setBotName] = useState('');
   const [showCursor, setShowCursor] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,19 +55,23 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
   const startBuilding = () => {
     setView('building');
-    setMessages([{
-      role: 'assistant',
-      text: "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.",
-      persona: 'Simple_AI'
-    }, {
-      role: 'assistant',
-      text: QUESTIONS[0],
-      persona: 'Simple_AI'
-    }]);
+    const welcomeMsg = "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.";
+    const firstQuestion = QUESTIONS[0];
+    
+    setMessages([
+      { role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' },
+      { role: 'assistant', content: firstQuestion, persona: 'Simple_AI' }
+    ]);
+    
+    setApiMessages([
+      { role: 'assistant', content: welcomeMsg },
+      { role: 'assistant', content: firstQuestion }
+    ]);
   };
 
   const handleBuildingInput = (text: string) => {
-    setMessages(prev => [...prev, { role: 'user', text }]);
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setApiMessages(prev => [...prev, { role: 'user', content: text }]);
 
     const newData = { ...buildData };
     const questionKeys: (keyof BuildData)[] = ['name', 'personality', 'topics', 'quirks', 'tone', 'special'];
@@ -75,49 +84,86 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
     if (currentQuestion < QUESTIONS.length - 1) {
       setTimeout(() => {
+        const nextQuestion = QUESTIONS[currentQuestion + 1];
         setMessages(prev => [...prev, {
           role: 'assistant',
-          text: QUESTIONS[currentQuestion + 1],
+          content: nextQuestion,
           persona: 'Simple_AI'
         }]);
+        setApiMessages(prev => [...prev, { role: 'assistant', content: nextQuestion }]);
       }, 500);
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // Done building
       setTimeout(() => {
+        const doneMsg = `Perfect! ${newData.name || 'Your AI'} is ready to go. Start chatting below!`;
         setMessages(prev => [...prev, {
           role: 'assistant',
-          text: `Perfect! ${newData.name || 'Your AI'} is ready to go. Start chatting below!`,
+          content: doneMsg,
           persona: 'Simple_AI'
         }]);
         setTimeout(() => {
           setView('chatting');
           setMessages([{
             role: 'assistant',
-            text: `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`,
+            content: `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`,
             persona: newData.name
+          }]);
+          setApiMessages([{
+            role: 'assistant',
+            content: `You are ${newData.name}. Personality: ${newData.personality}. Topics: ${newData.topics}. Quirks: ${newData.quirks}. Tone: ${newData.tone}. ${newData.special}`
           }]);
         }, 2000);
       }, 500);
     }
   };
 
-  const handleChattingInput = (text: string) => {
-    setMessages(prev => [...prev, { role: 'user', text }]);
+  const handleChattingInput = async (text: string) => {
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    const newApiMessages = [...apiMessages, { role: 'user', content: text }];
+    setApiMessages(newApiMessages);
+    setIsLoading(true);
     
-    // Placeholder response - replace with API call later
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newApiMessages,
+          buildingMode: false,
+          botData: buildData
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Error: ${data.error}`,
+          persona: botName
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: data.message,
+          persona: botName
+        }]);
+        setApiMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+      }
+    } catch (error) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: "I'm a placeholder response. Real AI integration coming soon!",
+        content: 'Connection error. Please try again.',
         persona: botName
       }]);
-    }, 1000);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSubmit = () => {
     if (view === 'initial') {
-      // On initial screen, ANY key press (even empty) starts building
       startBuilding();
       setInput('');
       return;
@@ -152,7 +198,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       <div className="flex-1 p-6 font-mono text-sm overflow-y-auto">
         {view === 'initial' && (
           <div className="flex flex-col h-full">
-            {/* /newAI as terminal prompt line */}
             <div className="mb-4">
               <span className="text-cyan-400 text-base font-bold drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
                 /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
@@ -181,10 +226,23 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                     ? 'bg-cyan-500/20 text-cyan-300' 
                     : 'bg-purple-900/30 text-white'
                 }`}>
-                  {msg.text}
+                  {msg.content}
                 </div>
               </div>
             ))}
+            
+            {isLoading && (
+              <div className="text-left">
+                <div className="inline-block bg-purple-900/30 px-4 py-2 rounded-lg">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -199,18 +257,20 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !isLoading) {
                 handleSubmit();
               }
             }}
-            className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500"
+            disabled={isLoading}
+            className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
             placeholder="Press Enter to begin..."
             autoFocus
           />
           {view !== 'initial' && (
             <button
               onClick={handleSubmit}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold px-6 py-2 rounded transition-all"
+              disabled={isLoading}
+              className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold px-6 py-2 rounded transition-all disabled:opacity-50"
             >
               Send
             </button>
