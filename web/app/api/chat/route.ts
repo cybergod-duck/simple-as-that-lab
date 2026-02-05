@@ -1,68 +1,73 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { selectBestModel, getModelDescription } from '@/utils/modelRouter';
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, buildingMode, botData } = await req.json();
-
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    const { messages, botData } = await req.json();
     
-    if (!OPENROUTER_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'OpenRouter API key not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Select best model based on bot's purpose
+    const selectedModel = selectBestModel(botData || {});
+    const modelDescription = getModelDescription(selectedModel);
+    
+    console.log('🤖 Selected model:', selectedModel);
+    console.log('📝 Model description:', modelDescription);
+    console.log('🎯 Bot data:', botData);
 
-    // Use DeepSeek R1 (thinking model) for better responses
-    const model = 'deepseek/deepseek-r1';
-
-    const systemPrompt = buildingMode
-      ? "You are Simple_AI, a friendly AI builder. Ask questions one at a time to help users create custom AI personalities. Keep responses brief and conversational."
-      : (botData?.systemPrompt || "You are a helpful AI assistant.");
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://simple-as-that.org',
         'X-Title': 'Simple As That'
       },
       body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
+        model: selectedModel,
+        messages: messages,
+        stream: true,
         temperature: 0.7,
-        max_tokens: 500,
-        stream: true
+        max_tokens: 2000
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenRouter error:', errorData);
-      return new Response(
-        JSON.stringify({ error: 'AI service error', details: errorData }),
-        { status: response.status, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!openRouterResponse.ok) {
+      throw new Error(`OpenRouter error: ${openRouterResponse.statusText}`);
     }
 
-    // Stream the response back to client
-    return new Response(response.body, {
+    // Stream the response
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = openRouterResponse.body?.getReader();
+        if (!reader) return;
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+        'Connection': 'keep-alive'
+      }
     });
 
   } catch (error) {
-    console.error('Chat API error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    console.error('API Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process request' },
+      { status: 500 }
     );
   }
 }

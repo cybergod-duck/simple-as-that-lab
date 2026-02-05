@@ -199,6 +199,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
   const startChatting = () => {
     console.log('🚀 Starting chatting phase with bot:', buildData.name);
+    console.log('📊 Bot configuration:', buildData);
     
     // Fade out Simple_AI title
     setShowTitle(false);
@@ -243,9 +244,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     }]);
     
     try {
-      // Log which model we're using
-      console.log('🤖 Using model: deepseek/deepseek-r1');
-      console.log('📝 System prompt:', newApiMessages[0]);
+      console.log('🎯 Sending to API with bot data:', buildData);
       
       const response = await fetch('/api/chat', {
         method: 'POST',
