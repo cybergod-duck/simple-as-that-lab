@@ -28,10 +28,15 @@ interface DisplayMessage extends Message {
   persona?: string;
   isStreaming?: boolean;
   displayedContent?: string;
+  isPrompt?: boolean;
+}
+
+interface SavedAI extends BuildData {
+  id: string;
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
-  const [view, setView] = useState<'initial' | 'building' | 'chatting'>('initial');
+  const [view, setView] = useState<'initial' | 'building' | 'chatting' | 'refining' | 'myais'>('initial');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [apiMessages, setApiMessages] = useState<Message[]>([]);
@@ -41,6 +46,12 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [showCursor, setShowCursor] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<'back' | 'refine'>('refine');
+  const [savedAIs, setSavedAIs] = useState<SavedAI[]>([]);
+  const [menuSelection, setMenuSelection] = useState<'newai' | 'myais'>('newai');
+  const [selectedAI, setSelectedAI] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typewriterIntervals = useRef<Map<number, NodeJS.Timeout>>(new Map());
@@ -57,18 +68,44 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Typewriter effect for AI messages
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (view === 'initial' && savedAIs.length > 0) {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setMenuSelection(prev => prev === 'newai' ? 'myais' : 'newai');
+        }
+      } else if (showSavePrompt) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          setSelectedAction(prev => prev === 'back' ? 'refine' : 'back');
+        }
+      } else if (view === 'myais') {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedAI(prev => Math.max(0, prev - 1));
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedAI(prev => Math.min(savedAIs.length - 1, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [view, showSavePrompt, savedAIs.length, selectedAI]);
+
+  // Typewriter effect
   useEffect(() => {
     messages.forEach((msg, index) => {
-      if (msg.role === 'assistant' && msg.isStreaming && msg.content) {
+      if (msg.role === 'assistant' && msg.isStreaming && msg.content && !msg.isPrompt) {
         const currentDisplayed = msg.displayedContent || '';
         
         if (currentDisplayed.length < msg.content.length) {
-          // Clear existing interval for this message
           const existingInterval = typewriterIntervals.current.get(index);
           if (existingInterval) clearInterval(existingInterval);
           
-          // Create new typewriter interval
           const interval = setInterval(() => {
             setMessages(prev => {
               const updated = [...prev];
@@ -81,7 +118,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                   displayedContent: currentMsg.content.slice(0, currentLen + 1)
                 };
               } else {
-                // Typing complete
                 updated[index] = {
                   ...currentMsg,
                   isStreaming: false
@@ -91,7 +127,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
               }
               return updated;
             });
-          }, 20); // 20ms per character = fast but visible typing
+          }, 20);
           
           typewriterIntervals.current.set(index, interval);
         }
@@ -110,14 +146,12 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
   const startBuilding = () => {
     setView('building');
-    
-    // Fade in Simple_AI title
+    setMessageCount(0);
     setTimeout(() => setShowTitle(true), 100);
     
     const welcomeMsg = "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.";
     const firstQuestion = QUESTIONS[0];
     
-    // Delay messages to let title fade in
     setTimeout(() => {
       addMessageWithTypewriter({ role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' });
       
@@ -157,7 +191,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       }, 500);
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Done building
       setTimeout(() => {
         const doneMsg = `Perfect! ${newData.name || 'Your AI'} is ready to go. Start chatting below!`;
         addMessageWithTypewriter({
@@ -187,12 +220,24 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   const handleChattingInput = async (text: string) => {
+    if (showSavePrompt) {
+      // Handle save/refine selection
+      if (text.toLowerCase() === 'enter' || text === '') {
+        if (selectedAction === 'back') {
+          saveAI();
+        } else {
+          startRefining();
+        }
+      }
+      return;
+    }
+
     setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
     const newApiMessages = [...apiMessages, { role: 'user', content: text }];
     setApiMessages(newApiMessages);
     setIsLoading(true);
+    setMessageCount(prev => prev + 1);
     
-    // Add empty streaming message
     const streamingMessageIndex = messages.length + 1;
     setMessages(prev => [...prev, {
       role: 'assistant',
@@ -239,7 +284,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
               
               if (content) {
                 accumulatedContent += content;
-                // Update with typewriter effect
                 setMessages(prev => {
                   const updated = [...prev];
                   updated[streamingMessageIndex] = {
@@ -259,18 +303,24 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         }
       }
 
-      // Mark streaming complete
       setMessages(prev => {
         const updated = [...prev];
         updated[streamingMessageIndex] = {
           ...updated[streamingMessageIndex],
           content: accumulatedContent,
-          isStreaming: true // Let typewriter finish
+          isStreaming: true
         };
         return updated;
       });
       
       setApiMessages(prev => [...prev, { role: 'assistant', content: accumulatedContent }]);
+
+      // Show save prompt after 6 interactions
+      if (messageCount + 1 >= 6) {
+        setTimeout(() => {
+          setShowSavePrompt(true);
+        }, accumulatedContent.length * 20 + 1000);
+      }
 
     } catch (error) {
       setMessages(prev => {
@@ -289,18 +339,90 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setIsLoading(false);
   };
 
+  const saveAI = () => {
+    const newAI: SavedAI = {
+      ...buildData,
+      id: Date.now().toString()
+    };
+    setSavedAIs(prev => [...prev, newAI]);
+    setView('initial');
+    setMessages([]);
+    setShowSavePrompt(false);
+    setShowTitle(false);
+    setBuildData({});
+    setMessageCount(0);
+    setCurrentQuestion(0);
+  };
+
+  const startRefining = () => {
+    setView('refining');
+    setShowSavePrompt(false);
+    setShowTitle(false);
+    
+    setTimeout(() => {
+      setShowTitle(true);
+      addMessageWithTypewriter({
+        role: 'assistant',
+        content: "No problem! What would you like to change about your AI?",
+        persona: 'Simple_AI'
+      });
+    }, 300);
+  };
+
+  const selectMenuItem = () => {
+    if (menuSelection === 'newai') {
+      startBuilding();
+    } else {
+      setView('myais');
+    }
+  };
+
+  const selectSavedAI = (ai: SavedAI) => {
+    setBuildData(ai);
+    setBotName(ai.name || 'AI');
+    setView('chatting');
+    setShowTitle(true);
+    setMessageCount(0);
+    setMessages([{
+      role: 'assistant',
+      content: `Hey! I'm ${ai.name}. ${ai.personality || 'Ready to chat!'}`,
+      displayedContent: `Hey! I'm ${ai.name}. ${ai.personality || 'Ready to chat!'}`,
+      persona: ai.name
+    }]);
+    setApiMessages([{
+      role: 'system',
+      content: `You are ${ai.name}. Personality: ${ai.personality}. Topics: ${ai.topics}. Quirks: ${ai.quirks}. Tone: ${ai.tone}. ${ai.special}`
+    }]);
+  };
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     
     if (view === 'initial') {
-      startBuilding();
+      selectMenuItem();
+      setInput('');
+      return;
+    }
+
+    if (view === 'myais') {
+      selectSavedAI(savedAIs[selectedAI]);
+      setInput('');
+      return;
+    }
+
+    if (showSavePrompt) {
+      if (selectedAction === 'back') {
+        saveAI();
+      } else {
+        startRefining();
+      }
       setInput('');
       return;
     }
     
     if (!input.trim()) return;
     
-    if (view === 'building') {
+    if (view === 'building' || view === 'refining') {
       handleBuildingInput(input);
     } else if (view === 'chatting') {
       handleChattingInput(input);
@@ -327,23 +449,78 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       <div className="flex-1 p-6 font-mono text-sm overflow-y-auto">
         {view === 'initial' && (
           <div className="flex flex-col h-full">
-            <div className="mb-4">
-              <span className="text-cyan-400 text-base font-bold drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
-                /newAI<span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
-              </span>
+            <div className="space-y-4">
+              <div className={`${menuSelection === 'newai' ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'text-cyan-400/40'} text-base font-bold transition-all`}>
+                /newAI<span className={`${showCursor && menuSelection === 'newai' ? 'opacity-100' : 'opacity-0'}`}>_</span>
+              </div>
+              {savedAIs.length > 0 && (
+                <div className={`${menuSelection === 'myais' ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'text-cyan-400/40'} text-base font-bold transition-all`}>
+                  /myAIs<span className={`${showCursor && menuSelection === 'myais' ? 'opacity-100' : 'opacity-0'}`}>_</span>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {(view === 'building' || view === 'chatting') && (
+        {view === 'myais' && (
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-cyan-400 mb-6">Your AIs</h2>
+            {savedAIs.map((ai, i) => (
+              <div
+                key={ai.id}
+                className={`p-3 rounded-lg transition-all ${
+                  i === selectedAI 
+                    ? 'bg-cyan-500/20 border border-cyan-400 text-cyan-300' 
+                    : 'bg-purple-900/20 border border-purple-500/30 text-white/60'
+                }`}
+              >
+                <p className="font-bold">{ai.name}</p>
+                <p className="text-xs mt-1">{ai.personality}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(view === 'building' || view === 'chatting' || view === 'refining') && (
           <div className="space-y-4">
-            {/* Fade-in title */}
-            <div 
-              className={`text-3xl font-bold text-cyan-400 mb-6 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 ${
-                showTitle ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {view === 'building' ? 'Simple_AI' : botName}
+            {/* Title with navigation buttons */}
+            <div className="flex items-center justify-between mb-6">
+              {showSavePrompt && (
+                <button
+                  onClick={() => {
+                    setSelectedAction('back');
+                    saveAI();
+                  }}
+                  className={`text-sm px-3 py-1 rounded transition-all ${
+                    selectedAction === 'back' 
+                      ? 'bg-green-500/30 text-green-300 animate-pulse' 
+                      : 'text-purple-400/60'
+                  }`}
+                >
+                  ← Back
+                </button>
+              )}
+              
+              <div 
+                className={`text-3xl font-bold text-cyan-400 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 flex-1 ${
+                  showTitle ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {view === 'building' || view === 'refining' ? 'Simple_AI' : botName}
+              </div>
+              
+              {showSavePrompt && (
+                <button
+                  onClick={startRefining}
+                  className={`text-sm px-3 py-1 rounded transition-all ${
+                    selectedAction === 'refine' 
+                      ? 'bg-yellow-500/30 text-yellow-300 animate-pulse' 
+                      : 'text-purple-400/60'
+                  }`}
+                >
+                  Refine →
+                </button>
+              )}
             </div>
             
             {messages.map((msg, i) => (
@@ -351,6 +528,8 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 <div className={`inline-block max-w-[80%] px-4 py-2 rounded-lg ${
                   msg.role === 'user' 
                     ? 'bg-cyan-500/20 text-cyan-300' 
+                    : msg.isPrompt
+                    ? 'bg-orange-500/20 text-orange-300'
                     : 'bg-purple-900/30 text-white'
                 }`}>
                   <span className="opacity-0 animate-[fadeIn_0.3s_ease-in_forwards]">
@@ -362,6 +541,15 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 </div>
               </div>
             ))}
+            
+            {showSavePrompt && (
+              <div className="text-center">
+                <p className="text-orange-300 text-sm animate-pulse">
+                  Are you satisfied with your AI or does it need further refining?
+                </p>
+                <p className="text-purple-400 text-xs mt-2">Use ← → to select, Enter to confirm</p>
+              </div>
+            )}
             
             {isLoading && messages[messages.length - 1]?.content === '' && (
               <div className="text-left">
@@ -388,12 +576,20 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || showSavePrompt}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
-            placeholder="Press Enter to begin..."
+            placeholder={
+              view === 'initial' 
+                ? "Press Enter to begin..." 
+                : view === 'myais'
+                ? "Press Enter to select..."
+                : showSavePrompt
+                ? "Use ← → to choose, Enter to confirm..."
+                : "Type your message..."
+            }
             autoFocus
           />
-          {view !== 'initial' && (
+          {view !== 'initial' && view !== 'myais' && !showSavePrompt && (
             <button
               type="submit"
               disabled={isLoading}
