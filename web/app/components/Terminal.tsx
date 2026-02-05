@@ -50,7 +50,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [savedAIs, setSavedAIs] = useState<SavedAI[]>([]);
   const [menuSelection, setMenuSelection] = useState<'newai' | 'myais'>('newai');
-  const [selectedAI, setSelectedAI] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typewriterIntervals = useRef<Map<number, NodeJS.Timeout>>(new Map());
@@ -199,6 +198,9 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   const startChatting = () => {
+    console.log('🚀 Starting chatting phase...');
+    console.log('Bot name:', buildData.name);
+    
     setShowTitle(false);
     
     setTimeout(() => {
@@ -217,7 +219,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         role: 'system',
         content: `You are ${buildData.name}. Personality: ${buildData.personality}. Topics: ${buildData.topics}. Quirks: ${buildData.quirks}. Tone: ${buildData.tone}. ${buildData.special}`
       }]);
-    }, 300);
+    }, 500);
   };
 
   const handleChattingInput = async (text: string) => {
@@ -398,13 +400,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     if (menuSelection === 'newai') {
       startBuilding();
     } else {
-      // TODO: Show myAIs list
       alert('/myAIs view coming soon!');
     }
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
+    
+    console.log('Submit pressed, current view:', view);
     
     if (view === 'initial') {
       selectMenuItem();
@@ -413,6 +416,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     }
 
     if (view === 'waitingToContinue') {
+      console.log('Transitioning from waitingToContinue to chatting');
       startChatting();
       setInput('');
       return;
@@ -479,14 +483,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 </button>
               )}
               
-              {(view === 'building' || view === 'waitingToContinue') && <div />}
+              {(view === 'building' || view === 'waitingToContinue') && <div className="w-20" />}
               
               <div 
                 className={`text-3xl font-bold text-cyan-400 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 flex-1 ${
                   showTitle ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {(view === 'building' || view === 'waitingToContinue') ? 'Simple_AI' : botName}
+                {(view === 'building' || view === 'waitingToContinue') ? 'Simple_AI' : (view === 'refining' ? 'Simple_AI' : botName)}
               </div>
               
               {(view === 'chatting' || view === 'refining') && (
@@ -502,7 +506,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 </button>
               )}
               
-              {(view === 'building' || view === 'waitingToContinue') && <div />}
+              {(view === 'building' || view === 'waitingToContinue') && <div className="w-20" />}
             </div>
             
             {messages.map((msg, i) => (
@@ -567,7 +571,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading || view === 'waitingToContinue'}
+            disabled={isLoading}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
             placeholder={
               view === 'initial' 
