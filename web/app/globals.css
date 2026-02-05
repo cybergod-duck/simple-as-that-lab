@@ -86,3 +86,13 @@ body {
   animation: rainbow 3s linear infinite;
   text-shadow: 0 0 10px currentColor;
 }
+
+/* Ghostlike fade-in for typed characters */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

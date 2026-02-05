@@ -27,6 +27,7 @@ interface Message {
 interface DisplayMessage extends Message {
   persona?: string;
   isStreaming?: boolean;
+  displayedContent?: string;
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
@@ -42,6 +43,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [showTitle, setShowTitle] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typewriterIntervals = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   // Blinking cursor animation
   useEffect(() => {
@@ -55,6 +57,57 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Typewriter effect for AI messages
+  useEffect(() => {
+    messages.forEach((msg, index) => {
+      if (msg.role === 'assistant' && msg.isStreaming && msg.content) {
+        const currentDisplayed = msg.displayedContent || '';
+        
+        if (currentDisplayed.length < msg.content.length) {
+          // Clear existing interval for this message
+          const existingInterval = typewriterIntervals.current.get(index);
+          if (existingInterval) clearInterval(existingInterval);
+          
+          // Create new typewriter interval
+          const interval = setInterval(() => {
+            setMessages(prev => {
+              const updated = [...prev];
+              const currentMsg = updated[index];
+              const currentLen = currentMsg.displayedContent?.length || 0;
+              
+              if (currentLen < currentMsg.content.length) {
+                updated[index] = {
+                  ...currentMsg,
+                  displayedContent: currentMsg.content.slice(0, currentLen + 1)
+                };
+              } else {
+                // Typing complete
+                updated[index] = {
+                  ...currentMsg,
+                  isStreaming: false
+                };
+                clearInterval(interval);
+                typewriterIntervals.current.delete(index);
+              }
+              return updated;
+            });
+          }, 20); // 20ms per character = fast but visible typing
+          
+          typewriterIntervals.current.set(index, interval);
+        }
+      }
+    });
+    
+    return () => {
+      typewriterIntervals.current.forEach(interval => clearInterval(interval));
+      typewriterIntervals.current.clear();
+    };
+  }, [messages]);
+
+  const addMessageWithTypewriter = (msg: DisplayMessage) => {
+    setMessages(prev => [...prev, { ...msg, displayedContent: '', isStreaming: true }]);
+  };
+
   const startBuilding = () => {
     setView('building');
     
@@ -66,10 +119,11 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     
     // Delay messages to let title fade in
     setTimeout(() => {
-      setMessages([
-        { role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' },
-        { role: 'assistant', content: firstQuestion, persona: 'Simple_AI' }
-      ]);
+      addMessageWithTypewriter({ role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' });
+      
+      setTimeout(() => {
+        addMessageWithTypewriter({ role: 'assistant', content: firstQuestion, persona: 'Simple_AI' });
+      }, welcomeMsg.length * 20 + 300);
       
       setApiMessages([
         { role: 'assistant', content: welcomeMsg },
@@ -79,7 +133,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   const handleBuildingInput = (text: string) => {
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
     setApiMessages(prev => [...prev, { role: 'user', content: text }]);
 
     const newData = { ...buildData };
@@ -94,11 +148,11 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     if (currentQuestion < QUESTIONS.length - 1) {
       setTimeout(() => {
         const nextQuestion = QUESTIONS[currentQuestion + 1];
-        setMessages(prev => [...prev, {
+        addMessageWithTypewriter({
           role: 'assistant',
           content: nextQuestion,
           persona: 'Simple_AI'
-        }]);
+        });
         setApiMessages(prev => [...prev, { role: 'assistant', content: nextQuestion }]);
       }, 500);
       setCurrentQuestion(currentQuestion + 1);
@@ -106,33 +160,34 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       // Done building
       setTimeout(() => {
         const doneMsg = `Perfect! ${newData.name || 'Your AI'} is ready to go. Start chatting below!`;
-        setMessages(prev => [...prev, {
+        addMessageWithTypewriter({
           role: 'assistant',
           content: doneMsg,
           persona: 'Simple_AI'
-        }]);
+        });
         setTimeout(() => {
           setShowTitle(false);
           setTimeout(() => {
             setView('chatting');
             setShowTitle(true);
-            setMessages([{
+            const greetingMsg = `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`;
+            addMessageWithTypewriter({
               role: 'assistant',
-              content: `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`,
+              content: greetingMsg,
               persona: newData.name
-            }]);
+            });
             setApiMessages([{
               role: 'system',
               content: `You are ${newData.name}. Personality: ${newData.personality}. Topics: ${newData.topics}. Quirks: ${newData.quirks}. Tone: ${newData.tone}. ${newData.special}`
             }]);
           }, 300);
-        }, 2000);
+        }, doneMsg.length * 20 + 1000);
       }, 500);
     }
   };
 
   const handleChattingInput = async (text: string) => {
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
     const newApiMessages = [...apiMessages, { role: 'user', content: text }];
     setApiMessages(newApiMessages);
     setIsLoading(true);
@@ -142,8 +197,9 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: '',
+      displayedContent: '',
       persona: botName,
-      isStreaming: true
+      isStreaming: false
     }]);
     
     try {
@@ -183,12 +239,13 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
               
               if (content) {
                 accumulatedContent += content;
-                // Update the streaming message
+                // Update with typewriter effect
                 setMessages(prev => {
                   const updated = [...prev];
                   updated[streamingMessageIndex] = {
                     role: 'assistant',
                     content: accumulatedContent,
+                    displayedContent: accumulatedContent.slice(0, (updated[streamingMessageIndex].displayedContent?.length || 0) + content.length),
                     persona: botName,
                     isStreaming: true
                   };
@@ -202,14 +259,13 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         }
       }
 
-      // Finalize message
+      // Mark streaming complete
       setMessages(prev => {
         const updated = [...prev];
         updated[streamingMessageIndex] = {
-          role: 'assistant',
+          ...updated[streamingMessageIndex],
           content: accumulatedContent,
-          persona: botName,
-          isStreaming: false
+          isStreaming: true // Let typewriter finish
         };
         return updated;
       });
@@ -222,6 +278,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         updated[streamingMessageIndex] = {
           role: 'assistant',
           content: 'Connection error. Please try again.',
+          displayedContent: 'Connection error. Please try again.',
           persona: botName,
           isStreaming: false
         };
@@ -296,9 +353,11 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                     ? 'bg-cyan-500/20 text-cyan-300' 
                     : 'bg-purple-900/30 text-white'
                 }`}>
-                  {msg.content}
-                  {msg.isStreaming && (
-                    <span className="inline-block w-2 h-4 bg-cyan-400 ml-1 animate-pulse"></span>
+                  <span className="opacity-0 animate-[fadeIn_0.3s_ease-in_forwards]">
+                    {msg.displayedContent || msg.content}
+                  </span>
+                  {msg.isStreaming && msg.displayedContent && msg.displayedContent.length < msg.content.length && (
+                    <span className="inline-block w-1 h-4 bg-cyan-400 ml-1 animate-pulse"></span>
                   )}
                 </div>
               </div>
