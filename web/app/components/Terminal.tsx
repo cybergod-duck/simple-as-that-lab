@@ -198,28 +198,32 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   };
 
   const startChatting = () => {
-    console.log('🚀 Starting chatting phase...');
-    console.log('Bot name:', buildData.name);
+    console.log('🚀 Starting chatting phase with bot:', buildData.name);
     
+    // Fade out Simple_AI title
     setShowTitle(false);
     
     setTimeout(() => {
       setView('chatting');
       setMessages([]); // CLEAR CHAT HISTORY
-      setShowTitle(true);
       setMessageCount(0);
       
-      const greetingMsg = `Hey! I'm ${buildData.name}. ${buildData.personality || 'Ready to chat!'}`;
+      // Fade in bot name
+      setTimeout(() => setShowTitle(true), 100);
+      
+      // Create greeting without third-person reference
+      const greetingMsg = `Hey! I'm ${buildData.name}. Ready to chat!`;
       addMessageWithTypewriter({
         role: 'assistant',
         content: greetingMsg,
         persona: buildData.name
       });
+      
       setApiMessages([{
         role: 'system',
-        content: `You are ${buildData.name}. Personality: ${buildData.personality}. Topics: ${buildData.topics}. Quirks: ${buildData.quirks}. Tone: ${buildData.tone}. ${buildData.special}`
+        content: `You are ${buildData.name}, an AI assistant. Your personality: ${buildData.personality}. Focus on these topics: ${buildData.topics}. Your quirks: ${buildData.quirks}. Use this tone: ${buildData.tone}. Additional notes: ${buildData.special}. IMPORTANT: Always speak in first person. Never refer to yourself in third person. You ARE ${buildData.name}.`
       }]);
-    }, 500);
+    }, 1000);
   };
 
   const handleChattingInput = async (text: string) => {
@@ -239,6 +243,10 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     }]);
     
     try {
+      // Log which model we're using
+      console.log('🤖 Using model: deepseek/deepseek-r1');
+      console.log('📝 System prompt:', newApiMessages[0]);
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -314,6 +322,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       }
 
     } catch (error) {
+      console.error('❌ Chat error:', error);
       setMessages(prev => {
         const updated = [...prev];
         updated[streamingMessageIndex] = {
@@ -369,7 +378,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         });
         setApiMessages([{
           role: 'system',
-          content: `You are ${buildData.name}. Personality: ${buildData.personality}. Topics: ${buildData.topics}. Quirks: ${buildData.quirks}. Tone: ${buildData.tone}. ${buildData.special}. User requested changes: ${text}`
+          content: `You are ${buildData.name}, an AI assistant. Your personality: ${buildData.personality}. Focus on these topics: ${buildData.topics}. Your quirks: ${buildData.quirks}. Use this tone: ${buildData.tone}. Additional notes: ${buildData.special}. User requested these changes: ${text}. IMPORTANT: Always speak in first person. Never refer to yourself in third person. You ARE ${buildData.name}.`
         }]);
       }, 2000);
     }, 1500);
@@ -407,8 +416,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     
-    console.log('Submit pressed, current view:', view);
-    
     if (view === 'initial') {
       selectMenuItem();
       setInput('');
@@ -416,7 +423,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     }
 
     if (view === 'waitingToContinue') {
-      console.log('Transitioning from waitingToContinue to chatting');
       startChatting();
       setInput('');
       return;
@@ -563,7 +569,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - ALWAYS VISIBLE */}
       <div className="p-4 border-t border-cyan-500/30 bg-slate-900/50 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input
@@ -571,7 +577,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || view === 'waitingToContinue'}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
             placeholder={
               view === 'initial' 
