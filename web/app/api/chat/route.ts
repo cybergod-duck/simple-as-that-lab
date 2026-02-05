@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,16 +7,14 @@ export async function POST(req: NextRequest) {
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     
     if (!OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenRouter API key not configured' },
-        { status: 500 }
+      return new Response(
+        JSON.stringify({ error: 'OpenRouter API key not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Use DeepSeek v3 for Simple_AI
-    const model = buildingMode 
-      ? 'deepseek/deepseek-chat' 
-      : (botData?.model || 'deepseek/deepseek-chat');
+    // Use DeepSeek R1 (thinking model) for better responses
+    const model = 'deepseek/deepseek-r1';
 
     const systemPrompt = buildingMode
       ? "You are Simple_AI, a friendly AI builder. Ask questions one at a time to help users create custom AI personalities. Keep responses brief and conversational."
@@ -37,29 +35,34 @@ export async function POST(req: NextRequest) {
           ...messages
         ],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 500,
+        stream: true
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('OpenRouter error:', errorData);
-      return NextResponse.json(
-        { error: 'AI service error', details: errorData },
-        { status: response.status }
+      return new Response(
+        JSON.stringify({ error: 'AI service error', details: errorData }),
+        { status: response.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
-    const message = data.choices?.[0]?.message?.content || 'No response';
-
-    return NextResponse.json({ message });
+    // Stream the response back to client
+    return new Response(response.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
 
   } catch (error) {
     console.error('Chat API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

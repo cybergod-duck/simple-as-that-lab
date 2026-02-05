@@ -26,6 +26,7 @@ interface Message {
 
 interface DisplayMessage extends Message {
   persona?: string;
+  isStreaming?: boolean;
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
@@ -38,6 +39,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [botName, setBotName] = useState('');
   const [showCursor, setShowCursor] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -55,18 +57,25 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
   const startBuilding = () => {
     setView('building');
+    
+    // Fade in Simple_AI title
+    setTimeout(() => setShowTitle(true), 100);
+    
     const welcomeMsg = "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.";
     const firstQuestion = QUESTIONS[0];
     
-    setMessages([
-      { role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' },
-      { role: 'assistant', content: firstQuestion, persona: 'Simple_AI' }
-    ]);
-    
-    setApiMessages([
-      { role: 'assistant', content: welcomeMsg },
-      { role: 'assistant', content: firstQuestion }
-    ]);
+    // Delay messages to let title fade in
+    setTimeout(() => {
+      setMessages([
+        { role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' },
+        { role: 'assistant', content: firstQuestion, persona: 'Simple_AI' }
+      ]);
+      
+      setApiMessages([
+        { role: 'assistant', content: welcomeMsg },
+        { role: 'assistant', content: firstQuestion }
+      ]);
+    }, 600);
   };
 
   const handleBuildingInput = (text: string) => {
@@ -103,16 +112,20 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           persona: 'Simple_AI'
         }]);
         setTimeout(() => {
-          setView('chatting');
-          setMessages([{
-            role: 'assistant',
-            content: `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`,
-            persona: newData.name
-          }]);
-          setApiMessages([{
-            role: 'assistant',
-            content: `You are ${newData.name}. Personality: ${newData.personality}. Topics: ${newData.topics}. Quirks: ${newData.quirks}. Tone: ${newData.tone}. ${newData.special}`
-          }]);
+          setShowTitle(false);
+          setTimeout(() => {
+            setView('chatting');
+            setShowTitle(true);
+            setMessages([{
+              role: 'assistant',
+              content: `Hey! I'm ${newData.name}. ${newData.personality || 'Ready to chat!'}`,
+              persona: newData.name
+            }]);
+            setApiMessages([{
+              role: 'system',
+              content: `You are ${newData.name}. Personality: ${newData.personality}. Topics: ${newData.topics}. Quirks: ${newData.quirks}. Tone: ${newData.tone}. ${newData.special}`
+            }]);
+          }, 300);
         }, 2000);
       }, 500);
     }
@@ -123,6 +136,15 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     const newApiMessages = [...apiMessages, { role: 'user', content: text }];
     setApiMessages(newApiMessages);
     setIsLoading(true);
+    
+    // Add empty streaming message
+    const streamingMessageIndex = messages.length + 1;
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '',
+      persona: botName,
+      isStreaming: true
+    }]);
     
     try {
       const response = await fetch('/api/chat', {
@@ -135,28 +157,76 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         })
       });
 
-      const data = await response.json();
-      
-      if (data.error) {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `Error: ${data.error}`,
-          persona: botName
-        }]);
-      } else {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: data.message,
-          persona: botName
-        }]);
-        setApiMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+      if (!response.ok || !response.body) {
+        throw new Error('Stream failed');
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              
+              if (content) {
+                accumulatedContent += content;
+                // Update the streaming message
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[streamingMessageIndex] = {
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    persona: botName,
+                    isStreaming: true
+                  };
+                  return updated;
+                });
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      // Finalize message
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[streamingMessageIndex] = {
+          role: 'assistant',
+          content: accumulatedContent,
+          persona: botName,
+          isStreaming: false
+        };
+        return updated;
+      });
+      
+      setApiMessages(prev => [...prev, { role: 'assistant', content: accumulatedContent }]);
+
     } catch (error) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Connection error. Please try again.',
-        persona: botName
-      }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[streamingMessageIndex] = {
+          role: 'assistant',
+          content: 'Connection error. Please try again.',
+          persona: botName,
+          isStreaming: false
+        };
+        return updated;
+      });
     }
     
     setIsLoading(false);
@@ -210,16 +280,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
         {(view === 'building' || view === 'chatting') && (
           <div className="space-y-4">
-            {view === 'building' && (
-              <div className="text-3xl font-bold text-cyan-400 mb-6 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">
-                Simple_AI
-              </div>
-            )}
-            {view === 'chatting' && botName && (
-              <div className="text-3xl font-bold text-cyan-400 mb-6 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">
-                {botName}
-              </div>
-            )}
+            {/* Fade-in title */}
+            <div 
+              className={`text-3xl font-bold text-cyan-400 mb-6 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 ${
+                showTitle ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {view === 'building' ? 'Simple_AI' : botName}
+            </div>
             
             {messages.map((msg, i) => (
               <div key={i} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
@@ -229,11 +297,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                     : 'bg-purple-900/30 text-white'
                 }`}>
                   {msg.content}
+                  {msg.isStreaming && (
+                    <span className="inline-block w-2 h-4 bg-cyan-400 ml-1 animate-pulse"></span>
+                  )}
                 </div>
               </div>
             ))}
             
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.content === '' && (
               <div className="text-left">
                 <div className="inline-block bg-purple-900/30 px-4 py-2 rounded-lg">
                   <div className="flex gap-1">
