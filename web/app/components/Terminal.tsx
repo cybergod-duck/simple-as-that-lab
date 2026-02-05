@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { generatePersonaTemplate } from '@/utils/personaTemplate';
+import { SIMPLE_AI_PERSONA, getSimpleAIWelcome, analyzeUserResponse } from '@/utils/simpleAI';
 
 const QUESTIONS = [
   "What's the name of your AI?",
@@ -36,7 +38,7 @@ interface SavedAI extends BuildData {
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
-  const [view, setView] = useState<'initial' | 'building' | 'waitingToContinue' | 'chatting' | 'refining'>('initial');
+  const [view, setView] = useState<'initial' | 'building' | 'waitingToContinue' | 'chatting' | 'refining' | 'freeChat'>('initial');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [apiMessages, setApiMessages] = useState<Message[]>([]);
@@ -50,6 +52,8 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [savedAIs, setSavedAIs] = useState<SavedAI[]>([]);
   const [menuSelection, setMenuSelection] = useState<'newai' | 'myais'>('newai');
+  const [waitingForFollowUp, setWaitingForFollowUp] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typewriterIntervals = useRef<Map<number, NodeJS.Timeout>>(new Map());
@@ -129,7 +133,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setMessages(prev => [...prev, { ...msg, displayedContent: '', isStreaming: true }]);
   };
 
-  const startBuilding = () => {
+  const startBuilding = async () => {
     setView('building');
     setMessageCount(0);
     setShowSavePrompt(false);
@@ -140,27 +144,69 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     
     setTimeout(() => setShowTitle(true), 100);
     
-    const welcomeMsg = "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.";
-    const firstQuestion = QUESTIONS[0];
+    const welcomeMsg = getSimpleAIWelcome();
     
     setTimeout(() => {
       addMessageWithTypewriter({ role: 'assistant', content: welcomeMsg, persona: 'Simple_AI' });
       
-      setTimeout(() => {
-        addMessageWithTypewriter({ role: 'assistant', content: firstQuestion, persona: 'Simple_AI' });
-      }, welcomeMsg.length * 20 + 300);
-      
       setApiMessages([
-        { role: 'assistant', content: welcomeMsg },
-        { role: 'assistant', content: firstQuestion }
+        { role: 'system', content: SIMPLE_AI_PERSONA },
+        { role: 'assistant', content: welcomeMsg }
       ]);
     }, 600);
   };
 
-  const handleBuildingInput = (text: string) => {
+  const handleBuildingInput = async (text: string) => {
     setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
-    setApiMessages(prev => [...prev, { role: 'user', content: text }]);
-
+    
+    const textLower = text.toLowerCase();
+    
+    // Check if user wants to learn more or chat
+    if (currentQuestion === 0 && messages.length <= 2) {
+      if (textLower.includes('learn') || textLower.includes('more') || textLower.includes('explain') || textLower.includes('how')) {
+        setView('freeChat');
+        await handleFreeChatInput(text);
+        return;
+      }
+    }
+    
+    // Handle follow-up responses
+    if (waitingForFollowUp) {
+      const combined = `${pendingAnswer} ${text}`;
+      setPendingAnswer('');
+      setWaitingForFollowUp(false);
+      
+      const newData = { ...buildData };
+      const questionKeys: (keyof BuildData)[] = ['name', 'personality', 'topics', 'quirks', 'tone', 'special'];
+      newData[questionKeys[currentQuestion]] = combined;
+      setBuildData(newData);
+      
+      if (currentQuestion === 0) {
+        setBotName(combined);
+      }
+      
+      proceedToNextQuestion();
+      return;
+    }
+    
+    // Check if answer needs follow-up
+    const analysis = analyzeUserResponse(text, currentQuestion);
+    
+    if (analysis.needsFollowUp && analysis.followUpQuestion) {
+      setPendingAnswer(text);
+      setWaitingForFollowUp(true);
+      
+      setTimeout(() => {
+        addMessageWithTypewriter({
+          role: 'assistant',
+          content: analysis.followUpQuestion,
+          persona: 'Simple_AI'
+        });
+      }, 500);
+      return;
+    }
+    
+    // Normal flow - save answer
     const newData = { ...buildData };
     const questionKeys: (keyof BuildData)[] = ['name', 'personality', 'topics', 'quirks', 'tone', 'special'];
     newData[questionKeys[currentQuestion]] = text;
@@ -170,6 +216,10 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       setBotName(text);
     }
 
+    proceedToNextQuestion();
+  };
+
+  const proceedToNextQuestion = () => {
     if (currentQuestion < QUESTIONS.length - 1) {
       setTimeout(() => {
         const nextQuestion = QUESTIONS[currentQuestion + 1];
@@ -178,13 +228,12 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           content: nextQuestion,
           persona: 'Simple_AI'
         });
-        setApiMessages(prev => [...prev, { role: 'assistant', content: nextQuestion }]);
       }, 500);
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // Done building
       setTimeout(() => {
-        const doneMsg = `Perfect! ${newData.name || 'Your AI'} is ready to go.`;
+        const doneMsg = `Perfect! ${buildData.name || 'Your AI'} is ready to go.`;
         addMessageWithTypewriter({
           role: 'assistant',
           content: doneMsg,
@@ -197,9 +246,93 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     }
   };
 
+  const handleFreeChatInput = async (text: string) => {
+    setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
+    const newApiMessages = [...apiMessages, { role: 'user', content: text }];
+    setApiMessages(newApiMessages);
+    setIsLoading(true);
+    
+    const streamingMessageIndex = messages.length + 1;
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '',
+      displayedContent: '',
+      persona: 'Simple_AI',
+      isStreaming: false
+    }]);
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newApiMessages,
+          buildingMode: true,
+          botData: {}
+        })
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error('Stream failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              
+              if (content) {
+                accumulatedContent += content;
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[streamingMessageIndex] = {
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    displayedContent: accumulatedContent,
+                    persona: 'Simple_AI',
+                    isStreaming: true
+                  };
+                  return updated;
+                });
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      setApiMessages(prev => [...prev, { role: 'assistant', content: accumulatedContent }]);
+
+    } catch (error) {
+      console.error('❌ Chat error:', error);
+    }
+    
+    setIsLoading(false);
+  };
+
   const startChatting = () => {
     console.log('🚀 Starting chatting phase with bot:', buildData.name);
     console.log('📊 Bot configuration:', buildData);
+    
+    // Generate persona template
+    const personaTemplate = generatePersonaTemplate(buildData);
+    console.log('🧠 Generated persona template:\n', personaTemplate);
     
     // Fade out Simple_AI title
     setShowTitle(false);
@@ -212,7 +345,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       // Fade in bot name
       setTimeout(() => setShowTitle(true), 100);
       
-      // Create greeting without third-person reference
+      // Create greeting
       const greetingMsg = `Hey! I'm ${buildData.name}. Ready to chat!`;
       addMessageWithTypewriter({
         role: 'assistant',
@@ -222,7 +355,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       
       setApiMessages([{
         role: 'system',
-        content: `You are ${buildData.name}, an AI assistant. Your personality: ${buildData.personality}. Focus on these topics: ${buildData.topics}. Your quirks: ${buildData.quirks}. Use this tone: ${buildData.tone}. Additional notes: ${buildData.special}. IMPORTANT: Always speak in first person. Never refer to yourself in third person. You ARE ${buildData.name}.`
+        content: personaTemplate
       }]);
     }, 1000);
   };
@@ -364,7 +497,10 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       });
       
       setTimeout(() => {
-        // Reset to chatting with cleared history
+        // Regenerate template with updates
+        const updatedTemplate = generatePersonaTemplate(buildData);
+        console.log('🔄 Updated persona template:\n', updatedTemplate);
+        
         setView('chatting');
         setMessages([]);
         setMessageCount(0);
@@ -377,7 +513,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         });
         setApiMessages([{
           role: 'system',
-          content: `You are ${buildData.name}, an AI assistant. Your personality: ${buildData.personality}. Focus on these topics: ${buildData.topics}. Your quirks: ${buildData.quirks}. Use this tone: ${buildData.tone}. Additional notes: ${buildData.special}. User requested these changes: ${text}. IMPORTANT: Always speak in first person. Never refer to yourself in third person. You ARE ${buildData.name}.`
+          content: `${updatedTemplate}\n\nUser requested changes: ${text}`
         }]);
       }, 2000);
     }, 1500);
@@ -431,6 +567,8 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     
     if (view === 'building') {
       handleBuildingInput(input);
+    } else if (view === 'freeChat') {
+      handleFreeChatInput(input);
     } else if (view === 'refining') {
       handleRefiningInput(input);
     } else if (view === 'chatting') {
@@ -471,7 +609,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           </div>
         )}
 
-        {(view === 'building' || view === 'waitingToContinue' || view === 'chatting' || view === 'refining') && (
+        {(view === 'building' || view === 'freeChat' || view === 'waitingToContinue' || view === 'chatting' || view === 'refining') && (
           <div className="space-y-4">
             {/* Title with Refine/Save buttons */}
             <div className="flex items-center justify-between mb-6">
@@ -488,14 +626,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 </button>
               )}
               
-              {(view === 'building' || view === 'waitingToContinue') && <div className="w-20" />}
+              {(view === 'building' || view === 'freeChat' || view === 'waitingToContinue') && <div className="w-20" />}
               
               <div 
                 className={`text-3xl font-bold text-cyan-400 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 flex-1 ${
                   showTitle ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {(view === 'building' || view === 'waitingToContinue') ? 'Simple_AI' : (view === 'refining' ? 'Simple_AI' : botName)}
+                {(view === 'building' || view === 'freeChat' || view === 'waitingToContinue') ? 'Simple_AI' : (view === 'refining' ? 'Simple_AI' : botName)}
               </div>
               
               {(view === 'chatting' || view === 'refining') && (
@@ -511,7 +649,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                 </button>
               )}
               
-              {(view === 'building' || view === 'waitingToContinue') && <div className="w-20" />}
+              {(view === 'building' || view === 'freeChat' || view === 'waitingToContinue') && <div className="w-20" />}
             </div>
             
             {messages.map((msg, i) => (
