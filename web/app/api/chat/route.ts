@@ -3,11 +3,17 @@ import { selectBestModel, getModelDescription } from '@/utils/modelRouter';
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, botData } = await req.json();
+    const { messages, botData, buildingMode } = await req.json();
     
-    // Select best model based on bot's purpose
-    const selectedModel = selectBestModel(botData || {});
-    const modelDescription = getModelDescription(selectedModel);
+    // For Simple_AI free chat, use DeepSeek R1
+    let selectedModel = 'deepseek/deepseek-r1';
+    let modelDescription = 'Deep reasoning model';
+    
+    // For actual bots, select best model based on purpose
+    if (!buildingMode && botData) {
+      selectedModel = selectBestModel(botData);
+      modelDescription = getModelDescription(selectedModel);
+    }
     
     console.log('🤖 Selected model:', selectedModel);
     console.log('📝 Model description:', modelDescription);
@@ -35,7 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Stream the response
-    const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         const reader = openRouterResponse.body?.getReader();
