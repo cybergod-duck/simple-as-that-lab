@@ -36,7 +36,7 @@ interface SavedAI extends BuildData {
 }
 
 export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: string) => void }) {
-  const [view, setView] = useState<'initial' | 'building' | 'chatting' | 'refining'>('initial');
+  const [view, setView] = useState<'initial' | 'building' | 'waitingToContinue' | 'chatting' | 'refining'>('initial');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [apiMessages, setApiMessages] = useState<Message[]>([]);
@@ -51,7 +51,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const [savedAIs, setSavedAIs] = useState<SavedAI[]>([]);
   const [menuSelection, setMenuSelection] = useState<'newai' | 'myais'>('newai');
   const [selectedAI, setSelectedAI] = useState<number>(0);
-  const [waitingForContinue, setWaitingForContinue] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typewriterIntervals = useRef<Map<number, NodeJS.Timeout>>(new Map());
@@ -68,7 +67,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Keyboard navigation
+  // Keyboard navigation for main menu
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (view === 'initial' && savedAIs.length > 0) {
@@ -134,7 +133,12 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
   const startBuilding = () => {
     setView('building');
     setMessageCount(0);
-    setWaitingForContinue(false);
+    setShowSavePrompt(false);
+    setBuildData({});
+    setCurrentQuestion(0);
+    setBotName('');
+    setMessages([]);
+    
     setTimeout(() => setShowTitle(true), 100);
     
     const welcomeMsg = "Hey! I'm Simple_AI, your builder. Let's create your custom AI personality.";
@@ -179,7 +183,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       }, 500);
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Done building - show "press enter to continue"
+      // Done building
       setTimeout(() => {
         const doneMsg = `Perfect! ${newData.name || 'Your AI'} is ready to go.`;
         addMessageWithTypewriter({
@@ -188,7 +192,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           persona: 'Simple_AI'
         });
         setTimeout(() => {
-          setWaitingForContinue(true);
+          setView('waitingToContinue');
         }, doneMsg.length * 20 + 500);
       }, 500);
     }
@@ -196,11 +200,13 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
 
   const startChatting = () => {
     setShowTitle(false);
-    setWaitingForContinue(false);
     
     setTimeout(() => {
       setView('chatting');
+      setMessages([]); // CLEAR CHAT HISTORY
       setShowTitle(true);
+      setMessageCount(0);
+      
       const greetingMsg = `Hey! I'm ${buildData.name}. ${buildData.personality || 'Ready to chat!'}`;
       addMessageWithTypewriter({
         role: 'assistant',
@@ -327,7 +333,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setShowSavePrompt(false);
     setMessageCount(0);
     
-    // Add Simple_AI message in the middle
     addMessageWithTypewriter({
       role: 'assistant',
       content: "What would you like to change about your AI?",
@@ -340,7 +345,6 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setMessages(prev => [...prev, { role: 'user', content: text, displayedContent: text }]);
     setIsLoading(true);
     
-    // Simple_AI "thinks" and processes
     setTimeout(() => {
       addMessageWithTypewriter({
         role: 'assistant',
@@ -349,15 +353,12 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         isSimpleAI: true
       });
       
-      // Update buildData based on user's request (simplified - in real version would use AI)
-      const updatedData = { ...buildData };
-      // Here you'd parse the user's request and update accordingly
-      setBuildData(updatedData);
-      
       setTimeout(() => {
-        // Fade out Simple_AI, reset chat with updated AI
+        // Reset to chatting with cleared history
         setView('chatting');
         setMessages([]);
+        setMessageCount(0);
+        
         const greetingMsg = `Hey! I'm ${buildData.name}. Let's try this again!`;
         addMessageWithTypewriter({
           role: 'assistant',
@@ -366,7 +367,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
         });
         setApiMessages([{
           role: 'system',
-          content: `You are ${buildData.name}. Personality: ${buildData.personality}. Topics: ${buildData.topics}. Quirks: ${buildData.quirks}. Tone: ${buildData.tone}. ${buildData.special}`
+          content: `You are ${buildData.name}. Personality: ${buildData.personality}. Topics: ${buildData.topics}. Quirks: ${buildData.quirks}. Tone: ${buildData.tone}. ${buildData.special}. User requested changes: ${text}`
         }]);
       }, 2000);
     }, 1500);
@@ -380,6 +381,8 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       id: Date.now().toString()
     };
     setSavedAIs(prev => [...prev, newAI]);
+    
+    // Reset to initial state
     setView('initial');
     setMessages([]);
     setShowSavePrompt(false);
@@ -388,15 +391,15 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
     setMessageCount(0);
     setCurrentQuestion(0);
     setBotName('');
+    setMenuSelection('newai');
   };
 
   const selectMenuItem = () => {
     if (menuSelection === 'newai') {
       startBuilding();
     } else {
-      // Show /myAIs list
-      setView('initial');
-      // TODO: Add myAIs view
+      // TODO: Show myAIs list
+      alert('/myAIs view coming soon!');
     }
   };
 
@@ -409,7 +412,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
       return;
     }
 
-    if (waitingForContinue) {
+    if (view === 'waitingToContinue') {
       startChatting();
       setInput('');
       return;
@@ -459,35 +462,47 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
           </div>
         )}
 
-        {(view === 'building' || view === 'chatting' || view === 'refining') && (
+        {(view === 'building' || view === 'waitingToContinue' || view === 'chatting' || view === 'refining') && (
           <div className="space-y-4">
-            {/* Title with navigation buttons (only in chatting view) */}
+            {/* Title with Refine/Save buttons */}
             <div className="flex items-center justify-between mb-6">
-              {view === 'chatting' && (
+              {(view === 'chatting' || view === 'refining') && (
                 <button
                   onClick={startRefining}
-                  className="text-sm px-3 py-1 rounded bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all"
+                  className={`text-sm px-3 py-1 rounded transition-all ${
+                    showSavePrompt 
+                      ? 'bg-yellow-500/30 text-yellow-300 animate-pulse' 
+                      : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                  }`}
                 >
                   ← Refine
                 </button>
               )}
+              
+              {(view === 'building' || view === 'waitingToContinue') && <div />}
               
               <div 
                 className={`text-3xl font-bold text-cyan-400 text-center drop-shadow-[0_0_20px_rgba(34,211,238,0.6)] transition-opacity duration-1000 flex-1 ${
                   showTitle ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {view === 'building' ? 'Simple_AI' : view === 'refining' ? 'Simple_AI' : botName}
+                {(view === 'building' || view === 'waitingToContinue') ? 'Simple_AI' : botName}
               </div>
               
-              {view === 'chatting' && (
+              {(view === 'chatting' || view === 'refining') && (
                 <button
                   onClick={saveAI}
-                  className="text-sm px-3 py-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-all"
+                  className={`text-sm px-3 py-1 rounded transition-all ${
+                    showSavePrompt 
+                      ? 'bg-green-500/30 text-green-300 animate-pulse' 
+                      : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                  }`}
                 >
                   Save →
                 </button>
               )}
+              
+              {(view === 'building' || view === 'waitingToContinue') && <div />}
             </div>
             
             {messages.map((msg, i) => (
@@ -497,7 +512,7 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
                     ? 'bg-cyan-500/20 text-cyan-300' 
                     : msg.isSimpleAI
                     ? 'bg-purple-500/20 text-purple-200 text-sm'
-                    : 'bg-purple-900/30 text-cyan-300'
+                    : 'bg-purple-900/30 text-white'
                 }`}>
                   {msg.isSimpleAI && (
                     <span className="text-xs text-purple-400 block mb-1">Simple_AI</span>
@@ -512,14 +527,14 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
               </div>
             ))}
             
-            {waitingForContinue && (
-              <div className="text-center">
+            {view === 'waitingToContinue' && (
+              <div className="text-center mt-6">
                 <p className="text-purple-300 text-sm animate-pulse">Press Enter to continue...</p>
               </div>
             )}
             
             {showSavePrompt && (
-              <div className="text-center">
+              <div className="text-center mt-6">
                 <p className="text-orange-300 text-sm animate-pulse">
                   Are you satisfied with your AI or does it need further refining?
                 </p>
@@ -552,18 +567,18 @@ export default function Terminal({ onCommandChange }: { onCommandChange: (cmd: s
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || view === 'waitingToContinue'}
             className="flex-1 bg-slate-800/50 text-white px-4 py-2 rounded outline-none border border-cyan-500/30 focus:border-cyan-500 placeholder-gray-500 disabled:opacity-50"
             placeholder={
               view === 'initial' 
                 ? "Press Enter to begin..." 
-                : waitingForContinue
+                : view === 'waitingToContinue'
                 ? "Press Enter to continue..."
                 : "Type your message..."
             }
             autoFocus
           />
-          {view !== 'initial' && !waitingForContinue && (
+          {view !== 'initial' && view !== 'waitingToContinue' && (
             <button
               type="submit"
               disabled={isLoading}
