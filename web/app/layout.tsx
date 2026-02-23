@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import ComplianceBot from './components/ComplianceBot';
 
 export const metadata: Metadata = {
     title: 'Simple As That | Compliance-as-a-Code',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <html lang="en">
             <body className="antialiased min-h-screen">
                 {children}
+                <ComplianceBot />
             </body>
         </html>
     );
