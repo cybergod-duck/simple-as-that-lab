@@ -105,14 +105,12 @@ export default function ComplianceBot() {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center transition-all hover:scale-110 cursor-pointer group"
+                    className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-black hover:bg-slate-900 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center transition-all hover:scale-110 cursor-pointer border border-white/10"
                     aria-label="Open compliance chatbot"
                 >
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
+                    <span className="text-white font-bold font-mono text-xl select-none">ST</span>
                     {/* Pulse ring */}
-                    <span className="absolute w-full h-full rounded-full bg-blue-500/30 animate-ping pointer-events-none"></span>
+                    <span className="absolute w-full h-full rounded-2xl bg-white/10 animate-ping pointer-events-none"></span>
                 </button>
             )}
 
@@ -139,8 +137,8 @@ export default function ComplianceBot() {
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-blue-600/30 border border-blue-500/20 text-blue-100'
-                                        : 'bg-white/[0.04] border border-white/10 text-slate-300'
+                                    ? 'bg-blue-600/30 border border-blue-500/20 text-blue-100'
+                                    : 'bg-white/[0.04] border border-white/10 text-slate-300'
                                     }`}>
                                     {msg.text}
                                 </div>
