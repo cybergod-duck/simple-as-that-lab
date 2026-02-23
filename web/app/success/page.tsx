@@ -246,6 +246,6 @@ export default function SuccessPage({
 
             </div>
         </div>
-        </main >
+        </main>
     );
 }
