@@ -3,10 +3,11 @@ import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 
 export default function LoginPage() {
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    // Provide fallback strings during Vercel build if env vars aren't present yet
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key'
+
+    const supabase = createBrowserClient(supabaseUrl, supabaseKey)
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
