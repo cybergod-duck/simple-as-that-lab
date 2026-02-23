@@ -46,7 +46,7 @@ const KNOWLEDGE: { keywords: string[]; response: string }[] = [
     },
     {
         keywords: ['hello', 'hi', 'hey', 'sup', 'what up'],
-        response: "Hey. I'm the Compliance Monitor. I can tell you about 2026 privacy law fines, ADA lawsuit risks, cookie consent requirements, GPC signals, and how our patch fixes all of it. What's keeping you up at night?"
+        response: "Hey. I'm the Compliance Bot. I can tell you about 2026 privacy law fines, ADA lawsuit risks, cookie consent requirements, GPC signals, and how our patch fixes all of it. What's keeping you up at night?"
     },
     {
         keywords: ['thanks', 'thank', 'cool', 'good', 'great'],
@@ -74,7 +74,7 @@ function findResponse(input: string): string {
 export default function ComplianceBot() {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<{ role: 'bot' | 'user'; text: string }[]>([
-        { role: 'bot', text: "I'm the Compliance Monitor. Ask me about 2026 privacy fines, ADA lawsuits, cookie consent, or how to protect your site." }
+        { role: 'bot', text: "I'm the Compliance Bot. Ask me about 2026 privacy fines, ADA lawsuits, cookie consent, or how to protect your site." }
     ])
     const [input, setInput] = useState('')
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -121,7 +121,7 @@ export default function ComplianceBot() {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span className="text-sm font-bold text-white">Compliance Monitor</span>
+                            <span className="text-sm font-bold text-white">Compliance Bot</span>
                         </div>
                         <button
                             onClick={() => setIsOpen(false)}
