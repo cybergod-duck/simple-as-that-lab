@@ -77,7 +77,7 @@ export default function SuccessPage({
     return (
         <main className="min-h-screen bg-[#050511] font-sans text-slate-300 selection:bg-blue-500/30 pb-20">
             {/* Dynamic Background */}
-            <div className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none">
+            <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none">
                 <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[120px] mix-blend-screen animate-pulse filter" style={{ animationDuration: '4s' }}></div>
                 <div className="absolute bottom-[-20%] left-[-10%] w-[40%] h-[40%] bg-pink-900/10 rounded-full blur-[150px] mix-blend-screen animate-pulse filter" style={{ animationDelay: '2s', animationDuration: '5s' }}></div>
             </div>
@@ -131,9 +131,17 @@ export default function SuccessPage({
 
                     <button
                         onClick={async () => {
-                            const res = await fetch('/api/checkout', { method: 'POST' })
-                            const data = await res.json()
-                            if (data.url) window.location.href = data.url
+                            try {
+                                const res = await fetch('/api/checkout', { method: 'POST' })
+                                const data = await res.json()
+                                if (data.url) {
+                                    window.location.href = data.url
+                                } else {
+                                    alert(`Checkout failed: ${data.error || 'Unknown error'}`)
+                                }
+                            } catch (err) {
+                                alert('Network error while initializing checkout.')
+                            }
                         }}
                         className="w-full md:w-auto px-8 py-4 bg-white text-black font-bold text-lg rounded-xl hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] whitespace-nowrap text-center cursor-pointer"
                     >
@@ -201,7 +209,7 @@ export default function SuccessPage({
                                 <svg className="w-10 h-10 text-white/80 mb-2 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <button onClick={async () => { const res = await fetch('/api/checkout', { method: 'POST' }); const data = await res.json(); if (data.url) window.location.href = data.url; }} className="mt-2 px-6 py-2 bg-white/10 border border-white/20 hover:bg-white/20 transition-colors rounded-full text-sm font-bold text-white backdrop-blur-md cursor-pointer">
+                                <button onClick={async () => { try { const res = await fetch('/api/checkout', { method: 'POST' }); const data = await res.json(); if (data.url) { window.location.href = data.url; } else { alert(`Checkout failed: ${data.error || 'Unknown error'}`); } } catch (err) { alert('Network error while initializing checkout.'); } }} className="mt-2 px-6 py-2 bg-white/10 border border-white/20 hover:bg-white/20 transition-colors rounded-full text-sm font-bold text-white backdrop-blur-md cursor-pointer">
                                     Purchase to View
                                 </button>
                             </div>
@@ -238,7 +246,7 @@ export default function SuccessPage({
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                                 <span className="text-xs font-bold tracking-wider text-white/90 uppercase drop-shadow-md pb-2">License Required for Auto-Deployment Script</span>
-                                <button onClick={async () => { const res = await fetch('/api/checkout', { method: 'POST' }); const data = await res.json(); if (data.url) window.location.href = data.url; }} className="px-6 py-2 bg-pink-500 hover:bg-pink-400 transition-colors rounded-full text-sm font-bold text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] cursor-pointer">
+                                <button onClick={async () => { try { const res = await fetch('/api/checkout', { method: 'POST' }); const data = await res.json(); if (data.url) { window.location.href = data.url; } else { alert(`Checkout failed: ${data.error || 'Unknown error'}`); } } catch (err) { alert('Network error while initializing checkout.'); } }} className="px-6 py-2 bg-pink-500 hover:bg-pink-400 transition-colors rounded-full text-sm font-bold text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] cursor-pointer">
                                     Get Access
                                 </button>
                             </div>

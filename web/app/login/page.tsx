@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen bg-[#050511] font-sans text-slate-300 selection:bg-blue-500/30 flex items-center justify-center p-6">
-            <div className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none">
+            <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none">
                 <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[120px] mix-blend-screen animate-pulse filter" style={{ animationDuration: '4s' }}></div>
             </div>
 

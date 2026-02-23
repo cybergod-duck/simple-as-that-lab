@@ -201,9 +201,17 @@ function ScannerContent() {
               <p className="text-slate-400 text-sm">One script tag fixes all of the above. Deploys in under 60 seconds.</p>
               <button
                 onClick={async () => {
-                  const res = await fetch('/api/checkout', { method: 'POST' })
-                  const data = await res.json()
-                  if (data.url) window.location.href = data.url
+                  try {
+                    const res = await fetch('/api/checkout', { method: 'POST' })
+                    const data = await res.json()
+                    if (data.url) {
+                      window.location.href = data.url
+                    } else {
+                      alert(`Checkout failed: ${data.error || 'Unknown error'}`)
+                    }
+                  } catch (err) {
+                    alert('Network error while initializing checkout.')
+                  }
                 }}
                 className="inline-block px-10 py-4 bg-white text-black font-bold text-base rounded-xl hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
               >
@@ -240,7 +248,7 @@ export default function AntigravityHome() {
   return (
     <main className="min-h-screen bg-[#050511] font-sans text-slate-300 selection:bg-blue-500/30">
       {/* Ambient Background Glow */}
-      <div className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none">
+      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[120px] mix-blend-screen animate-pulse filter" style={{ animationDuration: '4s' }}></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40%] h-[40%] bg-pink-900/10 rounded-full blur-[150px] mix-blend-screen animate-pulse filter" style={{ animationDelay: '2s', animationDuration: '5s' }}></div>
       </div>
