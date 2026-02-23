@@ -1,5 +1,5 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 function ScannerContent() {
@@ -42,8 +42,22 @@ function ScannerContent() {
     "CRITICAL: Non-compliant encryption found."
   ]
 
-  const runAudit = () => {
-    if (!url) return
+  // Helper function for basic URL validation
+  const isValidUrl = (input: string): boolean => {
+    try {
+      new URL(input.startsWith('http') ? input : `https://${input}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  const runAudit = useCallback(() => {
+    if (!url || !isValidUrl(url)) {
+      setLogs(['> Invalid URL provided.']);
+      setStatus('failed');
+      return;
+    }
     setStatus('scanning')
     setLogs([])
 
@@ -54,7 +68,7 @@ function ScannerContent() {
         if (i === scanMessages.length - 1) setStatus('failed')
       }, i * 800)
     })
-  }
+  }, [url])
 
   return (
     <div className="flex-grow flex flex-col justify-center max-w-3xl mx-auto w-full">
@@ -70,7 +84,7 @@ function ScannerContent() {
             <input
               type="text"
               value={url}
-              onChange={(e) => setUrl(e.target.value.toLowerCase())}
+              onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && runAudit()}
               placeholder="TARGET_DOMAIN_URL"
               className="bg-transparent w-full outline-none text-lg uppercase placeholder:text-zinc-900"
