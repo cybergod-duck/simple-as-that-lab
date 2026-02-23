@@ -83,11 +83,11 @@ function ScannerContent() {
           </h1>
 
           <p className="text-slate-400 text-sm md:text-base leading-relaxed max-w-lg">
-            Statutory enforcement for digital infrastructure is shifting. We monitor legislative feeds and deploy invisible patches before fines hit. You aren't buying software — you're buying the absence of a lawsuit.
+            Statutory enforcement for digital infrastructure is shifting. We monitor legislative feeds and deploy invisible patches before fines hit. We're not selling code — we're providing certainty.
           </p>
 
-          <p className="text-red-400 text-sm font-medium">
-            Non-compliant entities in your sector are currently facing penalties up to {estimatedFine}/day. Check your status below.
+          <p className="text-slate-500 text-sm font-medium">
+            Penalties for non-compliance start at {estimatedFine}/day. Run your domain below.
           </p>
 
           <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 backdrop-blur-sm">
