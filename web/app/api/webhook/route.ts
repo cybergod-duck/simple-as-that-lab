@@ -27,17 +27,27 @@ export async function POST(req: Request) {
             const email = session.customer_details?.email;
 
             if (email) {
-                // Insert the buyer into your "VIP List" table
+                // Extract domain from checkout metadata (if set via custom field)
+                const domain = (session as any).custom_fields?.[0]?.text?.value ||
+                    session.client_reference_id ||
+                    null;
+
+                // Normalize domain if present
+                const normalizedDomain = domain
+                    ? domain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '').toLowerCase()
+                    : null;
+
+                // Insert the buyer into the paid_licenses table
                 const { error } = await supabase
                     .from('paid_licenses')
-                    .insert([{ email: email }]);
+                    .insert([{ email: email, domain: normalizedDomain }]);
 
                 if (error) {
                     console.error('Database Insert Error:', error.message);
                     return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
                 }
 
-                console.log(`License granted to: ${email}`);
+                console.log(`License granted to: ${email} | Domain: ${normalizedDomain || 'not provided'}`);
             }
         }
 

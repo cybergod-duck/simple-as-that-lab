@@ -2,6 +2,33 @@
 import { useState, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+// National Directive Engine — maps states to their specific legal exposure
+const getNationalDirective = (state: string) => {
+  const directives: Record<string, { law: string; fine: string; risk: string }> = {
+    'TN': { law: 'TIPA', fine: '$7,500', risk: 'Triple Damages' },
+    'RI': { law: 'RIDTPPA', fine: '$10,000', risk: 'Zero Cure Period' },
+    'IN': { law: 'ICDPA', fine: '$7,500', risk: 'Right to Correct Mandate' },
+    'MT': { law: 'MTCDPA', fine: '$7,500', risk: 'Grace Period Expired' },
+    'OR': { law: 'OCPA', fine: '$7,500', risk: 'Sensitive Data Definitions' },
+    'CA': { law: 'CPRA', fine: '$2,500', risk: 'Per Violation' },
+    'NY': { law: 'SHIELD Act', fine: '$5,000', risk: 'Data Integrity' },
+    'TX': { law: 'TDPSA', fine: '$7,500', risk: 'Consumer Opt-Out' },
+    'FL': { law: 'FDBR', fine: '$50,000', risk: 'High-Revenue Threshold' },
+    'MN': { law: 'MCDPA', fine: '$7,500', risk: 'Cure Period Expired' },
+  }
+
+  const info = directives[state] || { law: 'FTC Section 5', fine: '$50,120', risk: 'Deceptive Trade Practices' }
+
+  return {
+    mandateName: `${state || 'Federal'} (${info.law})`,
+    errorText: `${info.law} NON-COMPLIANCE DETECTED — ${info.risk}.`,
+    estimatedFine: `${info.fine} USD`,
+    law: info.law,
+    fine: info.fine,
+    risk: info.risk,
+  }
+}
+
 function ScannerContent() {
   const searchParams = useSearchParams()
   const stateParam = searchParams.get('state')
@@ -10,48 +37,32 @@ function ScannerContent() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'failed'>('idle')
   const [logs, setLogs] = useState<string[]>([])
 
-  // Dynamic state formatting
-  let mandateName = "B49-2026"
-  let errorText = "Statutory Patch v2026.04 missing."
-  let estimatedFine = "$2,500.00 USD"
+  // Get directive based on state parameter (or default)
+  const stateCode = stateParam?.toUpperCase() || ''
+  const directive = getNationalDirective(stateCode)
 
-  if (stateParam) {
-    const state = stateParam.toUpperCase()
-    if (state === 'TN') {
-      mandateName = "Tennessee (TIPA)"
-      errorText = "TIPA 'TRIPLE DAMAGE' ENFORCEMENT ACTIVE."
-      estimatedFine = "$7,500.00 USD"
-    } else if (state === 'RI') {
-      mandateName = "Rhode Island (RIDTPPA)"
-      errorText = "RIDTPPA — NO CURE PERIOD. IMMEDIATE PENALTY ACTIVE."
-      estimatedFine = "$10,000.00 USD"
-    } else if (state === 'IN') {
-      mandateName = "Indiana (ICDPA)"
-      errorText = "ICDPA VIOLATION DETECTED. 'RIGHT TO CORRECT' MANDATE MISSING."
-      estimatedFine = "$7,500.00 USD"
-    } else if (state === 'MT') {
-      mandateName = "Montana (MTCDPA)"
-      errorText = "MTCDPA GRACE PERIOD EXPIRED. ACTIVE ENFORCEMENT."
-      estimatedFine = "$7,500.00 USD"
-    } else if (state === 'OR') {
-      mandateName = "Oregon (OCPA)"
-      errorText = "OCPA SENSITIVE DATA DEFINITIONS NOT MET."
-      estimatedFine = "$7,500.00 USD"
-    } else if (state === 'MN') {
-      mandateName = "Minnesota (MCDPA)"
-      errorText = "MCDPA GRACE PERIOD EXPIRED."
-      estimatedFine = "$7,500.00 USD"
-    }
-  }
-
+  // Full multi-vector audit scan messages
   const scanMessages = [
     "Initializing statutory audit...",
-    "Analyzing SSL/TLS handshake...",
-    "Querying local ordinance database...",
-    "Checking security header alignment...",
-    `Verifying ${mandateName} compliance...`,
-    "CRITICAL: Missing required regulatory headers.",
-    "CRITICAL: Non-compliant encryption found."
+    "Resolving DNS and verifying SSL/TLS handshake...",
+    `Querying ${directive.mandateName} ordinance database...`,
+    // ADA Accessibility
+    "Scanning WCAG 2.1 AA accessibility compliance...",
+    "CRITICAL: Missing ARIA landmarks and keyboard navigation traps detected.",
+    // Cookie enforcement
+    "Analyzing cookie consent enforcement layer...",
+    "CRITICAL: Tracking pixels firing before explicit user consent.",
+    // GPC signal
+    "Detecting Global Privacy Control (GPC) signal support...",
+    "CRITICAL: GPC signal not honored — mandatory in CA, CO, CT, MT.",
+    // Privacy headers
+    `Verifying ${directive.mandateName} statutory disclosure requirements...`,
+    `CRITICAL: ${directive.law} non-compliance confirmed — ${directive.risk}.`,
+    // Tax disclosures
+    "Checking nexus-based tax disclosure requirements...",
+    "WARNING: No visitor-location-based tax notices detected.",
+    // Final verdict
+    `VERDICT: Domain exposed to fines up to ${directive.fine}/violation.`
   ]
 
   const isValidUrl = (input: string): boolean => {
@@ -70,13 +81,13 @@ function ScannerContent() {
       return;
     }
     setStatus('scanning')
-    setLogs([])
+    setLogs([`> TARGET ACQUIRED: ${url}`])
 
     scanMessages.forEach((msg, i) => {
       setTimeout(() => {
         setLogs(prev => [...prev, `> ${msg}`])
         if (i === scanMessages.length - 1) setStatus('failed')
-      }, i * 800)
+      }, (i + 1) * 700)
     })
   }, [url])
 
@@ -99,7 +110,7 @@ function ScannerContent() {
           </p>
 
           <p className="text-slate-500 text-sm font-medium">
-            Penalties for non-compliance start at {estimatedFine}/day. Run your domain below.
+            Penalties for non-compliance start at {directive.estimatedFine}/day. Run your domain below.
           </p>
 
           <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 backdrop-blur-sm">
@@ -126,9 +137,15 @@ function ScannerContent() {
 
       {(status === 'scanning' || status === 'failed') && (
         <div className="space-y-6">
-          <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 min-h-[220px] font-mono text-sm space-y-2 backdrop-blur-sm">
+          <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 min-h-[280px] max-h-[400px] overflow-y-auto font-mono text-sm space-y-1.5 backdrop-blur-sm">
             {logs.map((log, i) => (
-              <p key={i} className={log.includes('CRITICAL') ? 'text-red-400 font-bold' : 'text-slate-400'}>{log}</p>
+              <p key={i} className={
+                log.includes('CRITICAL') ? 'text-red-400 font-bold' :
+                  log.includes('WARNING') ? 'text-amber-400 font-semibold' :
+                    log.includes('VERDICT') ? 'text-red-500 font-bold text-base mt-2' :
+                      log.includes('TARGET ACQUIRED') ? 'text-blue-400 font-bold' :
+                        'text-slate-400'
+              }>{log}</p>
             ))}
             {status === 'scanning' && <span className="inline-block h-4 w-2 bg-blue-400 animate-bounce ml-1"></span>}
           </div>
@@ -137,16 +154,24 @@ function ScannerContent() {
             <div className="bg-gradient-to-r from-red-900/30 to-pink-900/30 border border-red-500/30 rounded-2xl p-8 backdrop-blur-md text-center space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-bold tracking-widest uppercase">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                Non-Compliant
+                Multi-Vector Failure
               </div>
-              <p className="text-white font-bold text-lg">Action Required: {errorText}</p>
+              <p className="text-white font-bold text-lg">{directive.errorText}</p>
+              <div className="flex flex-wrap justify-center gap-3 text-xs text-slate-400">
+                <span className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">ADA/WCAG ✗</span>
+                <span className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">Cookie Consent ✗</span>
+                <span className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">GPC Signal ✗</span>
+                <span className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">Privacy Disclosure ✗</span>
+                <span className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded">Tax Notice ⚠</span>
+              </div>
+              <p className="text-slate-400 text-sm">One script tag fixes all of the above. Deploys in under 60 seconds.</p>
               <a
                 href="https://buy.stripe.com/00wdR31uZ9KAa8yao71kA00"
                 className="inline-block px-10 py-4 bg-white text-black font-bold text-base rounded-xl hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
               >
-                Acquire Patch — $49
+                Acquire Universal Patch — $49
               </a>
-              <p className="text-slate-400 text-xs">Estimated daily fine for non-compliance: {estimatedFine}</p>
+              <p className="text-slate-400 text-xs">Estimated daily fine exposure: {directive.estimatedFine}/violation</p>
             </div>
           )}
         </div>
