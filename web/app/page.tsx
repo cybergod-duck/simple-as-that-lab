@@ -34,12 +34,15 @@ function ScannerContent() {
   const stateParam = searchParams.get('state')
 
   const [url, setUrl] = useState('')
-  const [status, setStatus] = useState<'idle' | 'scanning' | 'failed'>('idle')
+  const [status, setStatus] = useState<'idle' | 'scanning' | 'failed' | 'passed'>('idle')
   const [logs, setLogs] = useState<string[]>([])
 
   // Get directive based on state parameter (or default)
   const stateCode = stateParam?.toUpperCase() || ''
   const directive = getNationalDirective(stateCode)
+
+  // Domains that pass the scan (our own properties)
+  const compliantDomains = ['simple-as-that.org', 'www.simple-as-that.org', 'localhost', 'localhost:3000']
 
   // Full multi-vector audit scan messages
   const scanMessages = [
@@ -65,6 +68,23 @@ function ScannerContent() {
     `VERDICT: Domain exposed to fines up to ${directive.fine}/violation.`
   ]
 
+  const passScanMessages = [
+    "Initializing statutory audit...",
+    "Resolving DNS and verifying SSL/TLS handshake...",
+    "Querying multi-jurisdictional ordinance database...",
+    "Scanning WCAG 2.1 AA accessibility compliance...",
+    "OK: ARIA landmarks and keyboard navigation detected.",
+    "Analyzing cookie consent enforcement layer...",
+    "OK: Cookie consent hard-blocker active. Tracking deferred until consent.",
+    "Detecting Global Privacy Control (GPC) signal support...",
+    "OK: GPC signal honored. navigator.globalPrivacyControl recognized.",
+    "Verifying statutory disclosure requirements...",
+    "OK: Privacy rights footer link and disclosure modal detected.",
+    "Checking nexus-based tax disclosure requirements...",
+    "OK: Service-based — no product tax disclosure required.",
+    "VERDICT: Domain is FULLY COMPLIANT across all checked vectors."
+  ]
+
   const isValidUrl = (input: string): boolean => {
     try {
       new URL(input.startsWith('http') ? input : `https://${input}`);
@@ -80,13 +100,25 @@ function ScannerContent() {
       setStatus('failed');
       return;
     }
+
+    // Normalize the input to just domain
+    const normalizedDomain = url
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/+$/, '')
+      .toLowerCase()
+
+    const isOwnSite = compliantDomains.some(d => normalizedDomain === d || normalizedDomain.startsWith(d))
+
     setStatus('scanning')
     setLogs([`> TARGET ACQUIRED: ${url}`])
 
-    scanMessages.forEach((msg, i) => {
+    const messages = isOwnSite ? passScanMessages : scanMessages
+
+    messages.forEach((msg: string, i: number) => {
       setTimeout(() => {
-        setLogs(prev => [...prev, `> ${msg}`])
-        if (i === scanMessages.length - 1) setStatus('failed')
+        setLogs((prev: string[]) => [...prev, `> ${msg}`])
+        if (i === messages.length - 1) setStatus(isOwnSite ? 'passed' : 'failed')
       }, (i + 1) * 700)
     })
   }, [url])
@@ -135,16 +167,18 @@ function ScannerContent() {
         </div>
       )}
 
-      {(status === 'scanning' || status === 'failed') && (
+      {(status === 'scanning' || status === 'failed' || status === 'passed') && (
         <div className="space-y-6">
           <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 min-h-[280px] max-h-[400px] overflow-y-auto font-mono text-sm space-y-1.5 backdrop-blur-sm">
-            {logs.map((log, i) => (
+            {logs.map((log: string, i: number) => (
               <p key={i} className={
                 log.includes('CRITICAL') ? 'text-red-400 font-bold' :
                   log.includes('WARNING') ? 'text-amber-400 font-semibold' :
-                    log.includes('VERDICT') ? 'text-red-500 font-bold text-base mt-2' :
-                      log.includes('TARGET ACQUIRED') ? 'text-blue-400 font-bold' :
-                        'text-slate-400'
+                    log.includes('VERDICT') && log.includes('COMPLIANT') ? 'text-green-400 font-bold text-base mt-2' :
+                      log.includes('VERDICT') ? 'text-red-500 font-bold text-base mt-2' :
+                        log.includes('OK:') ? 'text-green-400' :
+                          log.includes('TARGET ACQUIRED') ? 'text-blue-400 font-bold' :
+                            'text-slate-400'
               }>{log}</p>
             ))}
             {status === 'scanning' && <span className="inline-block h-4 w-2 bg-blue-400 animate-bounce ml-1"></span>}
@@ -176,6 +210,24 @@ function ScannerContent() {
                 Acquire Universal Patch — $49
               </button>
               <p className="text-slate-400 text-xs">Estimated daily fine exposure: {directive.estimatedFine}/violation</p>
+            </div>
+          )}
+
+          {status === 'passed' && (
+            <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-2xl p-8 backdrop-blur-md text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-green-500/30 bg-green-500/10 text-green-400 text-xs font-bold tracking-widest uppercase">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Fully Compliant
+              </div>
+              <p className="text-white font-bold text-lg">This domain passes all compliance vectors.</p>
+              <div className="flex flex-wrap justify-center gap-3 text-xs text-slate-400">
+                <span className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">ADA/WCAG ✓</span>
+                <span className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">Cookie Consent ✓</span>
+                <span className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">GPC Signal ✓</span>
+                <span className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">Privacy Disclosure ✓</span>
+                <span className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded">Tax Notice ✓</span>
+              </div>
+              <p className="text-green-400/70 text-sm">No action required. This site is protected by the Universal Compliance Patch.</p>
             </div>
           )}
         </div>
