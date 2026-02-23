@@ -231,7 +231,7 @@ export default function AntigravityHome() {
               <span>Active Protocol: ENFORCEMENT-MODE</span>
               <span>Security: AES-256-GCM</span>
             </div>
-            <span>Authorized use only.</span>
+            <a href="/privacy" className="text-blue-400/60 hover:text-blue-400 transition">Your Privacy Choices & 2026 State Rights</a>
           </div>
         </footer>
         <div className="text-center py-3 text-[10px] text-slate-600">
