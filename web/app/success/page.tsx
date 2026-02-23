@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { createBrowserClient } from '@supabase/ssr';
+import { useRouter } from 'next/navigation';
 
 // Helper to determine threat text based on the dynamic state parameter
 function getThreatData(stateParam?: string | string[]) {
@@ -73,6 +75,16 @@ export default function SuccessPage({
     searchParams: { [key: string]: string | string[] | undefined };
 }) {
     const threatData = getThreatData(searchParams?.state);
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
+        const supabase = createBrowserClient(supabaseUrl, supabaseKey);
+
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
 
     return (
         <main className="min-h-screen bg-[#050511] font-sans text-slate-300 selection:bg-blue-500/30 pb-20">
@@ -99,9 +111,14 @@ export default function SuccessPage({
                         </p>
                     </div>
 
-                    <Link href="/" className="px-5 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-all backdrop-blur-md self-start text-white">
-                        ← Return to Scanner
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Link href="/" className="px-5 py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-all backdrop-blur-md text-white text-center">
+                            ← Return to Scanner
+                        </Link>
+                        <button onClick={handleLogout} className="px-5 py-2.5 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-all backdrop-blur-md text-center cursor-pointer">
+                            Log out
+                        </button>
+                    </div>
                 </div>
 
                 {/* Priority Action Card (Stripe Link) */}
