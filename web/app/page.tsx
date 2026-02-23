@@ -266,8 +266,26 @@ export default function AntigravityHome() {
             <div className="flex gap-4 items-center">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-xs text-slate-500">Systems Nominal</span>
+                <span className="text-xs text-slate-500 hidden sm:inline-block">Systems Nominal</span>
               </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/checkout', { method: 'POST' })
+                    const data = await res.json()
+                    if (data.url) {
+                      window.location.href = data.url
+                    } else {
+                      alert(`Checkout failed: ${data.error || 'Unknown error'}`)
+                    }
+                  } catch (err) {
+                    alert('Network error while initializing checkout.')
+                  }
+                }}
+                className="px-5 py-2 rounded-full border border-pink-500/50 bg-pink-500/10 hover:bg-pink-500/20 text-sm font-bold transition-all backdrop-blur-md text-pink-400 cursor-pointer"
+              >
+                Purchase License
+              </button>
               <a href="/login" className="px-5 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-all backdrop-blur-md text-white">
                 Client Access
               </a>
