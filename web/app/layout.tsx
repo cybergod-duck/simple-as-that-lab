@@ -5,9 +5,6 @@ import ComplianceBot from './components/ComplianceBot';
 export const metadata: Metadata = {
     title: 'Simple As That | Compliance-as-a-Code',
     description: 'Automated compliance patching for hyper-local digital ordinances.',
-    icons: {
-        icon: '/favicon.svg',
-    },
 };
 
 export default function RootLayout({

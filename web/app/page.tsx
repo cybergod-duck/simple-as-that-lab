@@ -250,9 +250,7 @@ export default function AntigravityHome() {
         <nav className="border-b border-white/5 bg-white/[0.02] backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                ST
-              </div>
+              <img src="/logo.png" alt="ST Logo" className="w-8 h-8 rounded-md shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
               <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 tracking-tight">
                 Simple As That
               </span>

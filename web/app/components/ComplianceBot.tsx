@@ -108,7 +108,7 @@ export default function ComplianceBot() {
                     className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-black hover:bg-slate-900 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center transition-all hover:scale-110 cursor-pointer border border-white/10"
                     aria-label="Open compliance chatbot"
                 >
-                    <span className="text-white font-bold font-mono text-xl select-none">ST</span>
+                    <img src="/logo.png" alt="ST Logo" className="w-[85%] h-[85%] select-none rounded-[14px]" />
                     {/* Pulse ring */}
                     <span className="absolute w-full h-full rounded-2xl bg-white/10 animate-ping pointer-events-none"></span>
                 </button>
