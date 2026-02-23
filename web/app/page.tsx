@@ -165,12 +165,16 @@ function ScannerContent() {
                 <span className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded">Tax Notice ⚠</span>
               </div>
               <p className="text-slate-400 text-sm">One script tag fixes all of the above. Deploys in under 60 seconds.</p>
-              <a
-                href="https://buy.stripe.com/00wdR31uZ9KAa8yao71kA00"
-                className="inline-block px-10 py-4 bg-white text-black font-bold text-base rounded-xl hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+              <button
+                onClick={async () => {
+                  const res = await fetch('/api/checkout', { method: 'POST' })
+                  const data = await res.json()
+                  if (data.url) window.location.href = data.url
+                }}
+                className="inline-block px-10 py-4 bg-white text-black font-bold text-base rounded-xl hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
               >
                 Acquire Universal Patch — $49
-              </a>
+              </button>
               <p className="text-slate-400 text-xs">Estimated daily fine exposure: {directive.estimatedFine}/violation</p>
             </div>
           )}
