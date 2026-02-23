@@ -1,6 +1,67 @@
 import Link from 'next/link';
 
-export default function Home() {
+// Helper to determine threat text based on the dynamic state parameter
+function getThreatData(stateParam?: string | string[]) {
+  const defaultData = {
+    title: "Ordinance Monitoring Active",
+    subtitle: "Automated at Scale.",
+    description: "We monitor hyper-local digital ordinances and deploy invisible patches before the fines hit. You aren't buying software; you're buying the absence of a lawsuit.",
+    alertPulse: "bg-blue-500",
+    alertBg: "bg-blue-500/10",
+    alertText: "text-blue-400",
+    alertBorder: "border-blue-500/30"
+  };
+
+  if (!stateParam) return defaultData;
+
+  const state = Array.isArray(stateParam) ? stateParam[0].toUpperCase() : stateParam.toUpperCase();
+
+  switch (state) {
+    case 'IN':
+      return {
+        ...defaultData,
+        title: "ACTIVE THREAT: Indiana ICDPA Violation",
+        subtitle: "$7,500 Risk Exposure.",
+        description: "Your infrastructure has been flagged for non-compliance under the Indiana Consumer Data Protection Act. Deploy the STAT-2026-PATCH-V1 before the cure period expires.",
+        alertPulse: "bg-red-500",
+        alertBg: "bg-red-500/10",
+        alertText: "text-red-400",
+        alertBorder: "border-red-500/30"
+      };
+    case 'RI':
+      return {
+        ...defaultData,
+        title: "IMMEDIATE PENALTY: Rhode Island RIDPA",
+        subtitle: "$10,000 Active Fine.",
+        description: "Rhode Island law (RIDPA) has no cure period. Non-compliance is subject to immediate $10,000 penalties. Secure your license instantly to lock down your footer.",
+        alertPulse: "bg-red-500",
+        alertBg: "bg-red-500/10",
+        alertText: "text-red-400",
+        alertBorder: "border-red-500/30"
+      };
+    case 'MN':
+      return {
+        ...defaultData,
+        title: "GRACE PERIOD EXPIRED: Minnesota MCDPA",
+        subtitle: "$7,500 Fines Active.",
+        description: "The 30-day statutory grace period for Minnesota (MCDPA) expired Jan 31, 2026. Implement the patch now to halt further legal action.",
+        alertPulse: "bg-red-500",
+        alertBg: "bg-red-500/10",
+        alertText: "text-red-400",
+        alertBorder: "border-red-500/30"
+      };
+    default:
+      return defaultData;
+  }
+}
+
+export default function Home({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const threatData = getThreatData(searchParams?.state);
+
   return (
     <main className="min-h-screen bg-[#050511] overflow-hidden font-sans text-slate-300">
       {/* Dynamic Background */}
@@ -24,7 +85,7 @@ export default function Home() {
               </span>
             </div>
             <div className="flex gap-4 items-center">
-              <Link href="/success" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+              <Link href={`/success${searchParams?.state ? `?state=${searchParams.state}` : ''}`} className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
                 Verify Patch
               </Link>
               <button className="px-5 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-all backdrop-blur-md">
@@ -38,24 +99,24 @@ export default function Home() {
         <div className="flex-1 flex items-center justify-center px-6 py-20 pb-32">
           <div className="max-w-4xl mx-auto text-center space-y-8">
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4 animate-fade-in">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-              Ordinance Monitoring Active
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${threatData.alertBorder} ${threatData.alertBg} ${threatData.alertText} text-xs font-semibold uppercase tracking-wider mb-4 animate-fade-in`}>
+              <span className={`w-2 h-2 rounded-full ${threatData.alertPulse} animate-ping`}></span>
+              {threatData.title}
             </div>
 
             <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.1]">
               <span className="block opacity-90">Compliance,</span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 drop-shadow-lg">Automated at Scale.</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 drop-shadow-lg">{threatData.subtitle}</span>
             </h1>
 
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
-              We monitor hyper-local digital ordinances and deploy invisible patches before the fines hit. You aren't buying software; you're buying the absence of a lawsuit.
+              {threatData.description}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-              <button className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white text-black font-bold text-lg hover:bg-slate-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:-translate-y-1">
-                Scan My Infrastructure
-              </button>
+              <a href={`/success${searchParams?.state ? `?state=${searchParams.state}` : ''}`} className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white text-black font-bold text-lg hover:bg-slate-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:-translate-y-1 block text-center">
+                Acquire Patch
+              </a>
               <button className="w-full sm:w-auto px-8 py-4 rounded-lg border border-white/10 bg-white/5 text-white font-bold text-lg hover:bg-white/10 transition-all backdrop-blur-md">
                 View 2026 Mandates
               </button>

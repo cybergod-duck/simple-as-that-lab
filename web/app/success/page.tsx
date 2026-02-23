@@ -1,12 +1,68 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-    title: 'STAT-2026-PATCH-V1 | Simple As That',
-    description: 'Certified Statutory Compliance Patch for IN, KY, NJ, and TN 2026 Privacy Mandates.',
-};
+// Helper to determine threat text based on the dynamic state parameter
+function getThreatData(stateParam?: string | string[]) {
+    const defaultData = {
+        title: "STAT-2026-PATCH-V1",
+        subtitle: "Resolution for 2026 State Privacy Mandates (IN, KY, NJ, TN)",
+        description: "Your infrastructure is currently exposed to the latest iteration of the ICDPA, KCDPA, NJDPA, and TIPA statutes. Failing to implement this patch after the 30-day 'Cure Period' exposes you to significant regional fines.",
+        alertPulse: "bg-red-500",
+        alertBg: "bg-red-500/10",
+        alertText: "text-red-400",
+        alertBorder: "border-red-500/30"
+    };
 
-export default function SuccessPage() {
+    if (!stateParam) return defaultData;
+
+    const state = Array.isArray(stateParam) ? stateParam[0].toUpperCase() : stateParam.toUpperCase();
+
+    switch (state) {
+        case 'IN':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-IN",
+                subtitle: "Resolution for Indiana Consumer Data Protection Act (ICDPA)",
+                description: "Your infrastructure is currently exposed to the latest iteration of the ICDPA statutes. Failing to implement this patch after the 30-day 'Cure Period' exposes you to significant $7,500 regional fines per violation.",
+                alertPulse: "bg-red-500",
+                alertBg: "bg-red-500/10",
+                alertText: "text-red-400",
+                alertBorder: "border-red-500/30"
+            };
+        case 'RI':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-RI",
+                subtitle: "Resolution for Rhode Island Data Protection Act (RIDPA)",
+                description: "Your infrastructure is currently exposed to the latest iteration of the RIDPA statutes. This law contains NO CURE PERIOD. Failing to implement this patch exposes you to immediate $10,000 penalties per violation.",
+                alertPulse: "bg-red-500",
+                alertBg: "bg-red-500/10",
+                alertText: "text-red-400",
+                alertBorder: "border-red-500/30"
+            };
+        case 'MN':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-MN",
+                subtitle: "Resolution for Minnesota Consumer Data Protection Act (MCDPA)",
+                description: "Your infrastructure is currently exposed to the latest iteration of the MCDPA statutes. The 30-day 'Cure Period' has EXPIRED. Implement this patch immediately to halt active $7,500 penalties.",
+                alertPulse: "bg-red-500",
+                alertBg: "bg-red-500/10",
+                alertText: "text-red-400",
+                alertBorder: "border-red-500/30"
+            };
+        default:
+            return defaultData;
+    }
+}
+
+export default function SuccessPage({
+    searchParams,
+}: {
+    searchParams: { [key: string]: string | string[] | undefined };
+}) {
+    const threatData = getThreatData(searchParams?.state);
+
     return (
         <main className="min-h-screen bg-[#050511] font-sans text-slate-300 selection:bg-blue-500/30 pb-20">
             {/* Dynamic Background */}
@@ -20,15 +76,15 @@ export default function SuccessPage() {
                 {/* Header Ribbon */}
                 <div className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-8">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-bold tracking-widest uppercase mb-3">
-                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${threatData.alertBorder} ${threatData.alertBg} ${threatData.alertText} text-xs font-bold tracking-widest uppercase mb-3`}>
+                            <span className={`w-2 h-2 rounded-full ${threatData.alertPulse} animate-pulse`}></span>
                             License Required
                         </div>
                         <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-                            STAT-2026-PATCH-V1
+                            {threatData.title}
                         </h1>
                         <p className="text-slate-400 mt-2 text-sm font-medium">
-                            Resolution for 2026 State Privacy Mandates (IN, KY, NJ, TN)
+                            {threatData.subtitle}
                         </p>
                     </div>
 
@@ -43,7 +99,7 @@ export default function SuccessPage() {
                         <div className="flex-1 space-y-4">
                             <h2 className="text-2xl font-bold text-white">Acquire Your Compliance Patch</h2>
                             <p className="text-slate-300 leading-relaxed text-sm md:text-base">
-                                Your infrastructure is currently exposed to the latest iteration of the ICDPA, KCDPA, NJDPA, and TIPA statutes. Failing to implement this patch after the 30-day "Cure Period" exposes you to significant regional fines.
+                                {threatData.description}
                             </p>
                             <div className="flex items-center gap-4 text-sm font-medium text-slate-400">
                                 <span className="flex items-center gap-2">
@@ -79,7 +135,7 @@ export default function SuccessPage() {
                         </h2>
                         <div className="pl-11 space-y-4 text-sm leading-relaxed text-slate-400 pb-2">
                             <p>
-                                Per the Indiana (ICDPA), Kentucky (KCDPA), New Jersey (NJDPA), and Tennessee (TIPA) statutes, you must display a clear link on your homepage footer.
+                                Per state statutes, you must display a clear link on your homepage footer.
                             </p>
 
                             <div className="relative mt-4">
@@ -108,13 +164,13 @@ export default function SuccessPage() {
                         </h2>
                         <div className="pl-11 space-y-4 text-sm leading-relaxed text-slate-400">
                             <p>
-                                Add the proprietary disclosure text to your target `/privacy-rights` page to satisfy the 30-day "Cure Period" requirements:
+                                Add the proprietary disclosure text to your target `/privacy-rights` page to satisfy the requirements:
                             </p>
 
                             <div className="relative mt-4">
                                 <div className="bg-black/80 p-6 rounded-xl border border-white/10 font-mono text-[13px] leading-relaxed text-slate-300 filter blur-sm select-none opacity-50">
                                     <h3 className="text-white font-bold mb-3">NOTICE OF CONSUMER PRIVACY RIGHTS (2026)</h3>
-                                    <p className="mb-3">Residents of IN, KY, NJ, and TN are granted specific rights under state law regarding personal data...</p>
+                                    <p className="mb-3">Residents are granted specific rights under state law regarding personal data...</p>
                                     <ul className="space-y-2 mb-4 list-disc list-inside text-slate-400">
                                         <li><strong className="text-slate-200">Right to Access/Confirm...</strong></li>
                                         <li><strong className="text-slate-200">Right to Correct/Delete...</strong></li>
