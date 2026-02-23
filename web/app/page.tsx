@@ -193,6 +193,9 @@ export default function AntigravityHome() {
             <span>Authorized use only.</span>
           </div>
         </footer>
+        <div className="text-center py-3 text-[10px] text-slate-600">
+          Powered by Voss Neural Research
+        </div>
       </div>
     </main>
   )
