@@ -17,17 +17,29 @@ function ScannerContent() {
 
   if (stateParam) {
     const state = stateParam.toUpperCase()
-    if (state === 'RI') {
-      mandateName = "Rhode Island (RIDPA)"
-      errorText = "RIDPA CURE PERIOD UNAVAILABLE. IMMEDIATE PENALTY ACTIVE."
+    if (state === 'TN') {
+      mandateName = "Tennessee (TIPA)"
+      errorText = "TIPA 'TRIPLE DAMAGE' ENFORCEMENT ACTIVE."
+      estimatedFine = "$7,500.00 USD"
+    } else if (state === 'RI') {
+      mandateName = "Rhode Island (RIDTPPA)"
+      errorText = "RIDTPPA — NO CURE PERIOD. IMMEDIATE PENALTY ACTIVE."
       estimatedFine = "$10,000.00 USD"
+    } else if (state === 'IN') {
+      mandateName = "Indiana (ICDPA)"
+      errorText = "ICDPA VIOLATION DETECTED. 'RIGHT TO CORRECT' MANDATE MISSING."
+      estimatedFine = "$7,500.00 USD"
+    } else if (state === 'MT') {
+      mandateName = "Montana (MTCDPA)"
+      errorText = "MTCDPA GRACE PERIOD EXPIRED. ACTIVE ENFORCEMENT."
+      estimatedFine = "$7,500.00 USD"
+    } else if (state === 'OR') {
+      mandateName = "Oregon (OCPA)"
+      errorText = "OCPA SENSITIVE DATA DEFINITIONS NOT MET."
+      estimatedFine = "$7,500.00 USD"
     } else if (state === 'MN') {
       mandateName = "Minnesota (MCDPA)"
       errorText = "MCDPA GRACE PERIOD EXPIRED."
-      estimatedFine = "$7,500.00 USD"
-    } else if (state === 'IN') {
-      mandateName = "Indiana (ICDPA)"
-      errorText = "ICDPA VIOLATION DETECTED."
       estimatedFine = "$7,500.00 USD"
     }
   }

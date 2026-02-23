@@ -18,38 +18,47 @@ function getThreatData(stateParam?: string | string[]) {
     const state = Array.isArray(stateParam) ? stateParam[0].toUpperCase() : stateParam.toUpperCase();
 
     switch (state) {
+        case 'TN':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-TN",
+                subtitle: "Resolution for Tennessee Information Protection Act (TIPA)",
+                description: "Tennessee's TIPA carries 'Triple Damage' penalties of up to $7,500 per violation. Enforcement is in full swing. Implement this patch immediately to avoid escalating fines.",
+            };
         case 'IN':
             return {
                 ...defaultData,
                 title: "STAT-2026-PATCH-IN",
                 subtitle: "Resolution for Indiana Consumer Data Protection Act (ICDPA)",
-                description: "Your infrastructure is currently exposed to the latest iteration of the ICDPA statutes. Failing to implement this patch after the 30-day 'Cure Period' exposes you to significant $7,500 regional fines per violation.",
-                alertPulse: "bg-red-500",
-                alertBg: "bg-red-500/10",
-                alertText: "text-red-400",
-                alertBorder: "border-red-500/30"
+                description: "Indiana's ICDPA mandates a specific 'Right to Correct' provision. Failing to comply after the 30-day Cure Period triggers $7,500 fines per violation.",
             };
         case 'RI':
             return {
                 ...defaultData,
                 title: "STAT-2026-PATCH-RI",
-                subtitle: "Resolution for Rhode Island Data Protection Act (RIDPA)",
-                description: "Your infrastructure is currently exposed to the latest iteration of the RIDPA statutes. This law contains NO CURE PERIOD. Failing to implement this patch exposes you to immediate $10,000 penalties per violation.",
-                alertPulse: "bg-red-500",
-                alertBg: "bg-red-500/10",
-                alertText: "text-red-400",
-                alertBorder: "border-red-500/30"
+                subtitle: "Resolution for Rhode Island Data Transparency & Privacy Protection Act (RIDTPPA)",
+                description: "This law contains NO CURE PERIOD. Failing to implement this patch exposes you to immediate $10,000 penalties per violation.",
             };
         case 'MN':
             return {
                 ...defaultData,
                 title: "STAT-2026-PATCH-MN",
                 subtitle: "Resolution for Minnesota Consumer Data Protection Act (MCDPA)",
-                description: "Your infrastructure is currently exposed to the latest iteration of the MCDPA statutes. The 30-day 'Cure Period' has EXPIRED. Implement this patch immediately to halt active $7,500 penalties.",
-                alertPulse: "bg-red-500",
-                alertBg: "bg-red-500/10",
-                alertText: "text-red-400",
-                alertBorder: "border-red-500/30"
+                description: "The 30-day 'Cure Period' has EXPIRED. Implement this patch immediately to halt active $7,500 penalties.",
+            };
+        case 'MT':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-MT",
+                subtitle: "Resolution for Montana Consumer Data Privacy Act (MTCDPA)",
+                description: "Montana's MTCDPA grace periods for small businesses have officially expired in 2026. Active enforcement with fines up to $7,500 is now underway.",
+            };
+        case 'OR':
+            return {
+                ...defaultData,
+                title: "STAT-2026-PATCH-OR",
+                subtitle: "Resolution for Oregon Consumer Privacy Act (OCPA)",
+                description: "Oregon's OCPA has unique 'sensitive data' definitions that most standard site headers completely ignore. Non-compliance triggers fines up to $7,500 per violation.",
             };
         default:
             return defaultData;
