@@ -17,10 +17,10 @@ const getNationalDirective = (state: string) => {
     'MN': { law: 'MCDPA', fine: '$7,500', risk: 'Cure Period Expired' },
   }
 
-  const info = directives[state] || { law: 'FTC Section 5', fine: '$50,120', risk: 'Deceptive Trade Practices' }
+  const info = directives[state] || { law: '2026 State Privacy Mandate', fine: '$2,500', risk: 'Per Violation' }
 
   return {
-    mandateName: `${state || 'Federal'} (${info.law})`,
+    mandateName: state ? `${state} (${info.law})` : info.law,
     errorText: `${info.law} NON-COMPLIANCE DETECTED — ${info.risk}.`,
     estimatedFine: `${info.fine} USD`,
     law: info.law,
