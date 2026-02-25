@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  async rewrites() {
+    return [
+      {
+        source: '/website-creation-for-:industry',
+        destination: '/industry-landing/:industry',
+      },
+    ]
+  },
 };
 
 export default nextConfig;

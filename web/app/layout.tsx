@@ -7,6 +7,14 @@ export const metadata: Metadata = {
     description: 'Automated compliance patching for hyper-local digital ordinances.',
 };
 
+const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Simple As That AI Platform",
+    "url": "https://simple-as-that.org",
+    "logo": "https://simple-as-that.org/brand/logo.png",
+    "description": "AI-driven website generator and compliance automation for SMBs."
+};
 export default function RootLayout({
     children,
 }: {
@@ -15,6 +23,10 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="antialiased min-h-screen">
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+                />
                 {children}
                 <ComplianceBot />
             </body>
