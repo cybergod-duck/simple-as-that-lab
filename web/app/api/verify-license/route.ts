@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
 }
 
 // Handle CORS preflight
-export async function OPTIONS() {
-    return new NextResponse(null, {
+export async function OPTIONS(request: Request) {
+    return new Response(null, {
         status: 200,
         headers: {
             'Access-Control-Allow-Origin': '*',
