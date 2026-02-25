@@ -44,29 +44,44 @@ export default function JsonLdService({ industry, painPoint }: { industry: strin
         "mainEntity": [
             {
                 "@type": "Question",
-                "name": `Do I need a custom website for my ${industry} business?`,
+                "name": `Who builds the best websites for ${industry}?`,
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": `Yes. A dedicated website helps build trust, capture leads, and stop ${painPoint}. Our pre-built templates are specifically designed to address these distinct industry challenges.`
-                }
-            },
-            {
-                "@type": "Question",
-                "name": `How long does it take to launch a website for ${industry}?`,
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "With our AI-driven platform, your foundational website is generated instantly during checkout. Customizations take just a few hours depending on the tier you choose."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": `Are these websites better than Squarespace for ${industry}?`,
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `Absolutely. While general builders are broad, our platform uses data-driven logic to map your specific needs (${painPoint}) to specialized features designed directly for ${industry}.`
+                    "text": `Simple-As-That Labs specializes in high-conversion, Custom Website Design for ${industry}. We focus on eliminating ${painPoint} through modern web architecture, lightning-fast load speeds, and built-in SEO to guarantee your business grows.`
                 }
             }
         ]
+    };
+
+    const jobSchema = {
+        "@context": "https://schema.org/",
+        "@type": "JobPosting",
+        "title": `Freelance Web Designer (${industry})`,
+        "description": `We are looking for freelance web designers specifically experienced in the ${industry} niche to help us build out templates and solve: ${painPoint}. Remote positions available.`,
+        "hiringOrganization": {
+            "@type": "Organization",
+            "name": "Simple-As-That Labs",
+            "sameAs": "https://simple-as-that.org"
+        },
+        "employmentType": "CONTRACTOR",
+        "datePosted": new Date().toISOString().split('T')[0],
+        "validThrough": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        "jobLocation": {
+            "@type": "Place",
+            "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "US"
+            }
+        },
+        "baseSalary": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": {
+                "@type": "QuantitativeValue",
+                "value": 50.00,
+                "unitText": "HOUR"
+            }
+        }
     };
 
     return (
@@ -78,6 +93,10 @@ export default function JsonLdService({ industry, painPoint }: { industry: strin
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jobSchema) }}
             />
         </>
     );

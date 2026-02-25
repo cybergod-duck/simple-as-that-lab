@@ -4,9 +4,9 @@ import { useState } from 'react';
 const TIERS = [
     { id: 'starter', name: 'Starter Template', price: '$199', features: ['Mobile Responsive', 'Contact Form', 'Basic SEO'] },
     { id: 'pro', name: 'Pro Template', price: '$999', isPopular: true, features: ['Everything in Starter', 'Custom Logic', 'Advanced SEO', 'Analytics Dashboard'] },
-    { id: 'elite', name: 'Elite Template', price: '$1999', features: ['Everything in Pro', 'Custom AI Integration', 'Priority Support', 'Annual Maintenance'] },
+    { id: 'elite', name: 'Elite Template', price: '$1999', features: ['Everything in Pro', 'Custom Logo Included', 'State Compliance Pack Included', 'Priority Support'] },
     { id: 'enterprise', name: 'Enterprise Custom', price: 'Custom', features: ['Full Stack App', 'Dedicated Developer', 'Custom AI Models'] },
-    { id: 'basic', name: 'Landing Page Only', price: '$99', features: ['Single Page', 'Email Capture', 'Fast Hosting'] }
+    { id: 'basic', name: 'Landing Page', price: '$99', features: ['Single Page', 'Email Capture', 'Fast Hosting'] }
 ];
 
 export default function TemplateRecommendations({ industry, onComplete }: { industry: string, onComplete: (plan: string) => void }) {
@@ -34,8 +34,8 @@ export default function TemplateRecommendations({ industry, onComplete }: { indu
                         key={tier.id}
                         onClick={() => setSelectedPlan(tier.id)}
                         className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all transform hover:-translate-y-1 ${selectedPlan === tier.id
-                                ? 'border-bright-cyan bg-blue-50/50 dark:bg-blue-900/10 shadow-xl scale-105'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 shadow-md'
+                            ? 'border-bright-cyan bg-blue-50/50 dark:bg-blue-900/10 shadow-xl scale-105'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 shadow-md'
                             }`}
                     >
                         {tier.isPopular && (
@@ -57,8 +57,8 @@ export default function TemplateRecommendations({ industry, onComplete }: { indu
 
                         <button
                             className={`w-full py-2 rounded-lg font-bold transition-colors ${selectedPlan === tier.id
-                                    ? 'bg-deep-purple text-white'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white group-hover:bg-gray-200'
+                                ? 'bg-deep-purple text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white group-hover:bg-gray-200'
                                 }`}
                         >
                             {selectedPlan === tier.id ? 'Selected' : 'Select'}
@@ -75,8 +75,8 @@ export default function TemplateRecommendations({ industry, onComplete }: { indu
                             key={tier.id}
                             onClick={() => setSelectedPlan(tier.id)}
                             className={`p-4 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${selectedPlan === tier.id
-                                    ? 'border-bright-cyan bg-blue-50/20 shadow-md'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                ? 'border-bright-cyan bg-blue-50/20 shadow-md'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             <div>
@@ -94,8 +94,8 @@ export default function TemplateRecommendations({ industry, onComplete }: { indu
                     onClick={handleNext}
                     disabled={!selectedPlan}
                     className={`px-8 py-3 rounded-lg font-bold transition-all shadow-md ${selectedPlan
-                            ? 'bg-deep-purple hover:bg-opacity-90 text-white transform hover:scale-105 cursor-pointer'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed hidden'
+                        ? 'bg-deep-purple hover:bg-opacity-90 text-white transform hover:scale-105 cursor-pointer'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed hidden'
                         }`}
                 >
                     Continue to Checkout
