@@ -1,4 +1,4 @@
-import OnboardingFlow from '../components/Onboarding/OnboardingFlow';
+import OnboardingFlow from '../../components/Onboarding/OnboardingFlow';
 
 export const metadata = {
     title: 'Onboarding - Simple As That AI',

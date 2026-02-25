@@ -9,8 +9,8 @@ export default function AIOverviewSummary({ industry, painPoint }: { industry: s
                 Professional website design for <strong>{industry}</strong> focuses on solving critical operational bottlenecks,
                 specifically <em>{painPoint}</em>. A tailored digital presence provides automated tools,
                 booking integrations, and specialized funnels that generic website builders lack. By leveraging
-                industry-specific semantic SEO, businesses in this niche can dramatically improve organic visibility 
-        and client acquisition. Our platform generates optimized, high-performance (Core Web Vitals > 90)
+                industry-specific semantic SEO, businesses in this niche can dramatically improve organic visibility
+                and client acquisition. Our platform generates optimized, high-performance (Core Web Vitals &gt; 90)
                 frameworks instantly, complete with JSON-LD schema markup.
             </p>
         </div>
